@@ -1,5 +1,16 @@
-# Maven Build Artifacts
+# ==========================================
+# Web Crawler Monorepo (.gitignore)
+# ==========================================
+
+# ------------------------------------------
+# Backend (Spring Boot & Maven)
+# ------------------------------------------
+**/target/
 target/
+backend/target/
+*.class
+
+# Maven Release & Dependency Artifacts
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -10,32 +21,48 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
-# Frontend Dependencies & Builds
+# Packaged Binaries
+*.jar
+*.war
+*.ear
+
+# ------------------------------------------
+# Frontend (React, Vite, Node)
+# ------------------------------------------
+**/node_modules/
 node_modules/
 frontend/node_modules/
+**/dist/
 dist/
 frontend/dist/
 dist-ssr/
 *.local
 .eslintcache
 
-# Logs & Test outputs
-logs/
-*.log
+# NPM / Yarn / PNPM Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# ------------------------------------------
+# Testing & JMeter Performance Artifacts
+# ------------------------------------------
 results.jtl
+*.jtl
+jmeter.log
 test_results.log
 
-# OS Metadata
-.DS_Store
-Thumbs.db
-desktop.ini
+# ------------------------------------------
+# Redis & Databases
+# ------------------------------------------
+dump.rdb
+*.rdb
 
+# ------------------------------------------
 # IDE & Editor Files
+# ------------------------------------------
 .idea/
 *.iml
 *.iws
@@ -45,12 +72,16 @@ desktop.ini
 .classpath
 .project
 .settings/
+.factorypath
+bin/
 
-# Redis dumps & database temp files
-dump.rdb
-*.rdb
-
-# Temporary & Swap Files
+# ------------------------------------------
+# OS Metadata & Temp Files
+# ------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.bat
 *.tmp
 *.bak
 *~
