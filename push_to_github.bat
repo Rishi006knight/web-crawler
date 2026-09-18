@@ -10,14 +10,11 @@ if not exist ".git" (
     git init
 )
 
-echo Checking git status...
-git status
-
-echo Adding all files...
-git add .
+echo Staging all changes...
+git add -A
 
 echo Committing...
-git commit -m "initial commit"
+git commit -m "update: project sync"
 
 echo Setting main branch...
 git branch -M main

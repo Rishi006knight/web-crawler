@@ -1,4 +1,4 @@
-# Maven
+# Maven Build Artifacts
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -10,15 +10,16 @@ buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
 
-# Node / Vite / Frontend
+# Frontend Dependencies & Builds
 node_modules/
 frontend/node_modules/
 dist/
 frontend/dist/
 dist-ssr/
 *.local
+.eslintcache
 
-# Logs
+# Logs & Test outputs
 logs/
 *.log
 npm-debug.log*
@@ -26,22 +27,30 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+results.jtl
+test_results.log
 
-# OS Files
+# OS Metadata
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# IDE Files
+# IDE & Editor Files
 .idea/
 *.iml
 *.iws
 *.ipr
-.vscode/
 *.sublime-project
 *.sublime-workspace
 .classpath
 .project
 .settings/
 
-# Redis dump
+# Redis dumps & database temp files
 dump.rdb
+*.rdb
+
+# Temporary & Swap Files
+*.tmp
+*.bak
+*~

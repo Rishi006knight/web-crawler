@@ -47,8 +47,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         useSitemap
       });
       setSeedUrl('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit crawl job');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || 'Failed to submit crawl job');
     }
   };
 
