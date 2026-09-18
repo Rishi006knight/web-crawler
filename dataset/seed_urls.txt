@@ -1,0 +1,7 @@
+# Dataset: seed URLs used for testing the crawler (Exercise 8)
+# Each line: seedUrl (the crawler discovers further links from these pages at runtime)
+https://example.com
+https://httpbin.org
+https://www.wikipedia.org
+https://books.toscrape.com
+https://quotes.toscrape.com
