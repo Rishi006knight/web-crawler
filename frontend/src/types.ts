@@ -1,70 +1,32 @@
-export type DomainScope = 'SAME_DOMAIN' | 'SAME_DOMAIN_AND_SUBDOMAINS' | 'ANY';
-
-export interface CrawlRequest {
-  seedUrl: string;
-  maxDepth: number;
-  maxPages: number;
-  keyword?: string | null;
-  scope?: DomainScope;
-  respectRobotsTxt?: boolean;
-  useSitemap?: boolean;
-}
-
-export interface PageInfo {
+export interface PageData {
   url: string;
   title: string;
-  metaDescription: string;
-  h1: string;
-  wordCount: number;
-  imageCount: number;
-  internalLinkCount: number;
-  externalLinkCount: number;
-  emailsFound: string[];
-  snippet: string;
-  duplicate?: boolean;
-  isDuplicateOf?: string;
-  contentHash?: string;
-  statusCode?: number;
-  depth?: number;
-}
-
-export interface FailedUrlInfo {
-  url: string;
-  reason: string;
   statusCode: number;
-  retryCount: number;
-  timestamp: number;
+  headings: string[];
+  textContent: string;
+  wordCount: number;
+  links: string[];
+  images: string[];
+  crawlTimestamp: number;
 }
 
-export interface CrawlResult {
+export interface CrawlJob {
   jobId: string;
-  seedUrl: string;
-  status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
-  pagesVisited: number;
-  urlsDiscovered: number;
-  durationMillis: number;
-  visitedUrls: string[];
-  matchedUrls: string[];
-  pageInfos: PageInfo[];
-  failedUrls: FailedUrlInfo[];
-  scope: DomainScope;
-  respectRobotsTxt: boolean;
-  useSitemap: boolean;
-  duplicateCount: number;
+  startUrl: string;
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'STOPPED';
+  maxPages: number;
+  maxDepth: number;
+  pagesCrawled: number;
+  discoveredUrlsCount: number;
+  pages: PageData[];
   startTime: number;
   endTime?: number;
   errorMessage?: string;
+  durationMillis?: number;
 }
 
-export interface CrawlerStats {
-  totalPagesCrawled: number;
-  totalUrlsDiscovered: number;
-  totalUniqueDomains: number;
-  averageCrawlDurationMs: number;
-  activeJobCount: number;
-  totalEmailsDiscovered: number;
-  totalJobs: number;
-  completedJobs: number;
-  failedJobs: number;
-  topDomains: Record<string, number>;
+export interface CrawlRequest {
+  url: string;
+  maxPages: number;
+  maxDepth: number;
 }

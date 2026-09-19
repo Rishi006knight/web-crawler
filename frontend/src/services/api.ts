@@ -1,44 +1,34 @@
-import { CrawlRequest, CrawlResult, CrawlerStats } from '../types';
+import { CrawlRequest, CrawlJob } from '../types';
 
 const API_BASE = '/api';
 
 export const api = {
-  async startCrawl(request: CrawlRequest): Promise<CrawlResult> {
+  async startCrawl(request: CrawlRequest): Promise<CrawlJob> {
     const res = await fetch(`${API_BASE}/crawl`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request)
     });
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || `Failed with status ${res.status}`);
+      const err = await res.json().catch(() => ({ error: `Failed with status ${res.status}` }));
+      throw new Error(err.error || `Failed with status ${res.status}`);
     }
     return res.json();
   },
 
-  async getJob(jobId: string): Promise<CrawlResult> {
+  async getJob(jobId: string): Promise<CrawlJob> {
     const res = await fetch(`${API_BASE}/crawl/${jobId}`);
     if (!res.ok) throw new Error(`Job not found: ${jobId}`);
     return res.json();
   },
 
-  async getAllJobs(): Promise<CrawlResult[]> {
-    const res = await fetch(`${API_BASE}/crawl`);
-    if (!res.ok) return [];
-    return res.json();
+  async stopCrawl(jobId: string): Promise<void> {
+    await fetch(`${API_BASE}/crawl/${jobId}/stop`, { method: 'POST' });
   },
 
-  async clearJobCache(jobId: string): Promise<void> {
-    await fetch(`${API_BASE}/crawl/${jobId}/cache`, { method: 'DELETE' });
-  },
-
-  async deleteJob(jobId: string): Promise<void> {
-    await fetch(`${API_BASE}/crawl/${jobId}`, { method: 'DELETE' });
-  },
-
-  async getStats(): Promise<CrawlerStats> {
-    const res = await fetch(`${API_BASE}/stats`);
-    if (!res.ok) throw new Error('Failed to fetch stats');
+  async getLatestJob(): Promise<CrawlJob | null> {
+    const res = await fetch(`${API_BASE}/crawl/latest`);
+    if (res.status === 204 || !res.ok) return null;
     return res.json();
   },
 

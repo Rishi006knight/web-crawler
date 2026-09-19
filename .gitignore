@@ -8,6 +8,7 @@
 **/target/
 target/
 backend/target/
+backend/src/src/
 *.class
 
 # Maven Release & Dependency Artifacts
