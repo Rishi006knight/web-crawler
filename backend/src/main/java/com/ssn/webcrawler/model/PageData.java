@@ -6,9 +6,11 @@ import java.util.List;
 public class PageData {
     private String url;
     private String title;
+    private String description;
     private int statusCode;
     private List<String> headings = new ArrayList<>();
     private String textContent;
+    private List<ContentBlock> structuredContent = new ArrayList<>();
     private int wordCount;
     private List<String> links = new ArrayList<>();
     private List<String> images = new ArrayList<>();
@@ -18,13 +20,16 @@ public class PageData {
         this.crawlTimestamp = System.currentTimeMillis();
     }
 
-    public PageData(String url, String title, int statusCode, List<String> headings, 
-                    String textContent, int wordCount, List<String> links, List<String> images) {
+    public PageData(String url, String title, String description, int statusCode, List<String> headings, 
+                    String textContent, List<ContentBlock> structuredContent, int wordCount, 
+                    List<String> links, List<String> images) {
         this.url = url;
         this.title = title;
+        this.description = description;
         this.statusCode = statusCode;
         this.headings = headings != null ? headings : new ArrayList<>();
         this.textContent = textContent;
+        this.structuredContent = structuredContent != null ? structuredContent : new ArrayList<>();
         this.wordCount = wordCount;
         this.links = links != null ? links : new ArrayList<>();
         this.images = images != null ? images : new ArrayList<>();
@@ -45,6 +50,14 @@ public class PageData {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public int getStatusCode() {
@@ -69,6 +82,14 @@ public class PageData {
 
     public void setTextContent(String textContent) {
         this.textContent = textContent;
+    }
+
+    public List<ContentBlock> getStructuredContent() {
+        return structuredContent;
+    }
+
+    public void setStructuredContent(List<ContentBlock> structuredContent) {
+        this.structuredContent = structuredContent;
     }
 
     public int getWordCount() {

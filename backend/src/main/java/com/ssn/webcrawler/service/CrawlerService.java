@@ -1,6 +1,7 @@
 package com.ssn.webcrawler.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssn.webcrawler.model.ContentBlock;
 import com.ssn.webcrawler.model.CrawlJob;
 import com.ssn.webcrawler.model.CrawlRequest;
 import com.ssn.webcrawler.model.PageData;
@@ -8,11 +9,11 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.StringWriter;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
@@ -115,21 +116,68 @@ public class CrawlerService {
                         title = currentUrl;
                     }
 
+                    // Extract meta description
+                    Element metaDesc = doc.selectFirst("meta[name=description], meta[property=og:description]");
+                    String description = (metaDesc != null && metaDesc.hasAttr("content")) ? metaDesc.attr("content").trim() : "";
+
+                    // Clone document and strip noise for clean text extraction
+                    Document contentDoc = doc.clone();
+                    contentDoc.select("script, style, noscript, svg, nav, footer, header, form, iframe, button").remove();
+
                     // Extract headings
                     List<String> headings = new ArrayList<>();
-                    for (Element h : doc.select("h1, h2, h3")) {
+                    for (Element h : contentDoc.select("h1, h2, h3")) {
                         String text = h.text().trim();
-                        if (!text.isEmpty() && headings.size() < 25) {
+                        if (!text.isEmpty() && headings.size() < 30) {
                             headings.add(h.tagName().toUpperCase() + ": " + text);
                         }
                     }
 
-                    // Extract text
-                    String bodyText = doc.body() != null ? doc.body().text() : "";
-                    int wordCount = bodyText.isEmpty() ? 0 : bodyText.split("\\s+").length;
-                    String textPreview = bodyText.length() > 4000 ? bodyText.substring(0, 4000) + "..." : bodyText;
+                    // Extract structured content blocks & formatted readable text
+                    List<ContentBlock> structuredBlocks = new ArrayList<>();
+                    StringBuilder formattedText = new StringBuilder();
+                    int totalWords = 0;
+                    Set<String> seenTexts = new HashSet<>();
 
-                    // Extract links
+                    Elements contentElements = contentDoc.select("h1, h2, h3, h4, p, li, blockquote, pre");
+                    for (Element el : contentElements) {
+                        String text = el.text().trim();
+                        if (text.isEmpty() || text.length() < 3) continue;
+                        if (!seenTexts.add(text)) continue;
+
+                        String tag = el.tagName().toLowerCase();
+                        String type;
+                        if (tag.startsWith("h")) {
+                            type = "HEADING";
+                            int level = 1;
+                            try { level = Integer.parseInt(tag.substring(1)); } catch (Exception ignored) {}
+                            formattedText.append("\n\n").append("#".repeat(level)).append(" ").append(text).append("\n");
+                        } else if ("li".equals(tag)) {
+                            type = "LIST_ITEM";
+                            formattedText.append("\n• ").append(text);
+                        } else if ("blockquote".equals(tag)) {
+                            type = "QUOTE";
+                            formattedText.append("\n> ").append(text).append("\n");
+                        } else if ("pre".equals(tag)) {
+                            type = "CODE";
+                            formattedText.append("\n```\n").append(text).append("\n```\n");
+                        } else {
+                            type = "PARAGRAPH";
+                            formattedText.append("\n\n").append(text);
+                        }
+
+                        totalWords += text.split("\\s+").length;
+                        structuredBlocks.add(new ContentBlock(tag, type, text));
+                        if (structuredBlocks.size() >= 120) break;
+                    }
+
+                    String textContent = formattedText.toString().trim();
+                    if (textContent.isEmpty() && contentDoc.body() != null) {
+                        textContent = contentDoc.body().text();
+                        totalWords = textContent.split("\\s+").length;
+                    }
+
+                    // Extract links (from full doc so navigation is included for discovery)
                     List<String> links = new ArrayList<>();
                     for (Element a : doc.select("a[href]")) {
                         String absHref = a.attr("abs:href");
@@ -162,22 +210,25 @@ public class CrawlerService {
                     PageData pageData = new PageData(
                             currentUrl,
                             title,
+                            description,
                             statusCode,
                             headings,
-                            textPreview,
-                            wordCount,
+                            textContent,
+                            structuredBlocks,
+                            totalWords,
                             links,
                             images
                     );
 
                     job.addPage(pageData);
-                    log.info("[{}/{}] Crawled: {} ({})", job.getPages().size(), job.getMaxPages(), currentUrl, title);
+                    log.info("[{}/{}] Crawled: {} ({} words, {} blocks)", 
+                            job.getPages().size(), job.getMaxPages(), currentUrl, totalWords, structuredBlocks.size());
 
                 } catch (Exception e) {
                     log.warn("Failed to fetch page: {} - {}", currentUrl, e.getMessage());
                 }
 
-                // Tiny courtesy pause
+                // Courtesy pause
                 try {
                     Thread.sleep(150);
                 } catch (InterruptedException ignored) {
@@ -206,14 +257,16 @@ public class CrawlerService {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("URL,Title,Status,WordCount,HeadingsCount,LinksCount,ImagesCount,Headings,TextContent\n");
+        sb.append("URL,Title,Description,Status,WordCount,HeadingsCount,StructuredBlocksCount,LinksCount,ImagesCount,Headings,StructuredText\n");
 
         for (PageData p : job.getPages()) {
             sb.append(escapeCsv(p.getUrl())).append(",");
             sb.append(escapeCsv(p.getTitle())).append(",");
+            sb.append(escapeCsv(p.getDescription())).append(",");
             sb.append(p.getStatusCode()).append(",");
             sb.append(p.getWordCount()).append(",");
             sb.append(p.getHeadings().size()).append(",");
+            sb.append(p.getStructuredContent().size()).append(",");
             sb.append(p.getLinks().size()).append(",");
             sb.append(p.getImages().size()).append(",");
             sb.append(escapeCsv(String.join(" | ", p.getHeadings()))).append(",");
@@ -239,7 +292,7 @@ public class CrawlerService {
         if (field == null) {
             return "\"\"";
         }
-        return "\"" + field.replace("\"", "\"\"").replace("\n", " ").replace("\r", " ") + "\"";
+        return "\"" + field.replace("\"", "\"\"").replace("\n", " \n ").replace("\r", "") + "\"";
     }
 
     private String normalizeUrl(String url) {

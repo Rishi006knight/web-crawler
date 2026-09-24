@@ -1,9 +1,17 @@
+export interface ContentBlock {
+  tag: string;
+  type: 'HEADING' | 'PARAGRAPH' | 'LIST_ITEM' | 'QUOTE' | 'CODE';
+  text: string;
+}
+
 export interface PageData {
   url: string;
   title: string;
+  description?: string;
   statusCode: number;
   headings: string[];
   textContent: string;
+  structuredContent?: ContentBlock[];
   wordCount: number;
   links: string[];
   images: string[];

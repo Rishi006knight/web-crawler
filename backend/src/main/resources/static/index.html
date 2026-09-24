@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web Crawler - Simple & Fast</title>
+  <title>Web Crawler</title>
+  <link rel="icon" type="image/svg+xml" href="/crawler-icon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,24 +19,16 @@
   <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-xl shadow-lg shadow-cyan-500/10">
-          🕷️
+        <div class="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-lg shadow-cyan-500/10 flex items-center justify-center bg-black p-0.5">
+          <img src="/crawler-icon.svg" alt="Web Crawler Icon" class="w-full h-full object-contain">
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             Web Crawler
-            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-medium">Simple & Fast</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-medium">Structured Content</span>
           </h1>
-          <p class="text-xs text-slate-400">Extract titles, text, links, and images with one click</p>
+          <p class="text-xs text-slate-400">Extracts headings, structured paragraphs, lists, links, and images</p>
         </div>
-      </div>
-      <div id="exportButtons" class="hidden items-center gap-2">
-        <a id="btnCsv" href="#" download class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
-          <span>📥</span> Export CSV
-        </a>
-        <a id="btnJson" href="#" download class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
-          <span>📄</span> Export JSON
-        </a>
       </div>
     </div>
   </header>
@@ -115,11 +108,11 @@
     <div id="resultsContainer" class="hidden space-y-3">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
-          Crawled Data
+          Crawled Pages
           <span id="badgeCount" class="text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">0 Pages</span>
         </h2>
         <div class="relative w-full sm:w-72">
-          <input type="text" id="inputSearch" placeholder="Filter by title or URL..."
+          <input type="text" id="inputSearch" placeholder="Filter by title, URL, or keywords..."
                  class="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500">
           <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500 text-xs">🔍</span>
         </div>
@@ -134,6 +127,7 @@
                 <th class="py-3 px-4">Page Title & URL</th>
                 <th class="py-3 px-3 text-center">Status</th>
                 <th class="py-3 px-3 text-center">Words</th>
+                <th class="py-3 px-3 text-center">Blocks</th>
                 <th class="py-3 px-3 text-center">Links</th>
                 <th class="py-3 px-3 text-center">Images</th>
                 <th class="py-3 px-4 text-right">Action</th>
@@ -151,43 +145,68 @@
       <h3 class="text-base font-bold text-white">Ready to Crawl</h3>
       <p class="text-xs text-slate-400 max-w-md mx-auto">
         Enter any website URL above, pick your max pages limit, and click <strong>Start Crawl</strong>.
-        The crawler will extract all page titles, headings, body text, outgoing links, and images.
+        The crawler extracts structured headings, clean paragraphs, bullet points, links, and images.
       </p>
     </div>
   </main>
 
   <!-- Inspector Modal -->
   <div id="modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-3xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-3xl max-h-[88vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <!-- Modal Header -->
       <div class="p-5 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-950/80">
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 mb-1">
             <span id="modalStatus" class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">HTTP 200</span>
             <span id="modalWords" class="text-xs text-slate-400 font-mono">0 words</span>
+            <span id="modalBlocksCount" class="text-xs text-purple-400 font-mono">0 structured blocks</span>
           </div>
           <h3 id="modalTitle" class="text-base font-bold text-white truncate"></h3>
           <a id="modalUrl" href="#" target="_blank" class="text-xs text-cyan-400 hover:underline font-mono truncate block mt-0.5"></a>
+          <p id="modalDesc" class="hidden mt-2 text-xs text-slate-300 italic bg-slate-900/90 p-2.5 rounded-lg border border-slate-800"></p>
         </div>
         <button id="modalClose" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm">✕</button>
       </div>
+
+      <!-- Modal Body -->
       <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        <!-- Headings Summary -->
         <div class="space-y-2">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2"><span>📌</span> Headings</h4>
-          <div id="modalHeadings" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5 max-h-40 overflow-y-auto"></div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2"><span>📌</span> Headings Hierarchy</h4>
+          <div id="modalHeadings" class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5 max-h-36 overflow-y-auto"></div>
         </div>
+
+        <!-- Structured Content Section -->
         <div class="space-y-2">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2"><span>📝</span> Extracted Text</h4>
-          <div id="modalText" class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-300 font-sans text-xs leading-relaxed max-h-56 overflow-y-auto whitespace-pre-line"></div>
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <span>📝</span> Structured Content
+            </h4>
+            <div class="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+              <button id="btnViewStructured" type="button" class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-cyan-600 text-white transition">Structured Blocks</button>
+              <button id="btnViewRaw" type="button" class="px-2.5 py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200 transition">Clean Text</button>
+            </div>
+          </div>
+          <!-- Structured Blocks Container -->
+          <div id="modalStructured" class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 max-h-72 overflow-y-auto"></div>
+          <!-- Clean Formatted Text Container -->
+          <div id="modalText" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-300 font-sans text-xs leading-relaxed max-h-72 overflow-y-auto whitespace-pre-line"></div>
         </div>
+
+        <!-- Outgoing Links -->
         <div class="space-y-2">
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2"><span>🔗</span> Outgoing Links</h4>
-          <div id="modalLinks" class="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-40 overflow-y-auto divide-y divide-slate-900"></div>
+          <div id="modalLinks" class="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto divide-y divide-slate-900"></div>
         </div>
+
+        <!-- Images -->
         <div class="space-y-2">
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2"><span>🖼️</span> Images</h4>
-          <div id="modalImages" class="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto space-y-1"></div>
+          <div id="modalImages" class="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-32 overflow-y-auto space-y-1"></div>
         </div>
       </div>
+
+      <!-- Modal Footer -->
       <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-end">
         <button id="modalCloseBtn" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold">Close</button>
       </div>
@@ -198,12 +217,35 @@
     let currentJobId = null;
     let pollInterval = null;
     let cachedPages = [];
+    let isStructuredView = true;
 
     // Presets
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById('inputUrl').value = btn.dataset.url;
       });
+    });
+
+    // Content view toggle
+    const btnStruct = document.getElementById('btnViewStructured');
+    const btnRaw = document.getElementById('btnViewRaw');
+    const structContainer = document.getElementById('modalStructured');
+    const rawContainer = document.getElementById('modalText');
+
+    btnStruct.addEventListener('click', () => {
+      isStructuredView = true;
+      btnStruct.className = 'px-2.5 py-1 text-[11px] font-medium rounded-md bg-cyan-600 text-white transition';
+      btnRaw.className = 'px-2.5 py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200 transition';
+      structContainer.classList.remove('hidden');
+      rawContainer.classList.add('hidden');
+    });
+
+    btnRaw.addEventListener('click', () => {
+      isStructuredView = false;
+      btnRaw.className = 'px-2.5 py-1 text-[11px] font-medium rounded-md bg-cyan-600 text-white transition';
+      btnStruct.className = 'px-2.5 py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-slate-200 transition';
+      rawContainer.classList.remove('hidden');
+      structContainer.classList.add('hidden');
     });
 
     // Form submit
@@ -298,12 +340,6 @@
         b.className = 'px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-cyan-950 text-cyan-400 border border-cyan-800';
       }
 
-      // Exports
-      document.getElementById('exportButtons').classList.remove('hidden');
-      document.getElementById('exportButtons').style.display = 'flex';
-      document.getElementById('btnCsv').href = `/api/crawl/${job.jobId}/export?format=csv`;
-      document.getElementById('btnJson').href = `/api/crawl/${job.jobId}/export?format=json`;
-
       cachedPages = job.pages || [];
       renderTable();
     }
@@ -315,12 +351,15 @@
 
       const filtered = cachedPages.filter(p => {
         if (!q) return true;
-        return (p.title || '').toLowerCase().includes(q) || (p.url || '').toLowerCase().includes(q);
+        return (p.title || '').toLowerCase().includes(q) || 
+               (p.url || '').toLowerCase().includes(q) ||
+               (p.textContent || '').toLowerCase().includes(q);
       });
 
       document.getElementById('badgeCount').textContent = `${filtered.length} Pages`;
 
       filtered.forEach((p, idx) => {
+        const blocksCount = p.structuredContent ? p.structuredContent.length : 0;
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-800/40 transition cursor-pointer';
         tr.innerHTML = `
@@ -333,8 +372,9 @@
             <span class="px-2 py-0.5 rounded text-[11px] font-mono font-medium ${p.statusCode >= 200 && p.statusCode < 300 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">${p.statusCode}</span>
           </td>
           <td class="py-3 px-3 text-center text-slate-300 font-mono">${(p.wordCount || 0).toLocaleString()}</td>
+          <td class="py-3 px-3 text-center"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono text-[11px]">${blocksCount}</span></td>
           <td class="py-3 px-3 text-center"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[11px]">${(p.links || []).length}</span></td>
-          <td class="py-3 px-3 text-center"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono text-[11px]">${(p.images || []).length}</span></td>
+          <td class="py-3 px-3 text-center"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono text-[11px]">${(p.images || []).length}</span></td>
           <td class="py-3 px-4 text-right">
             <button class="btn-inspect px-3 py-1 bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-300 rounded-lg text-xs font-medium transition">Inspect</button>
           </td>
@@ -357,13 +397,65 @@
       document.getElementById('modalStatus').textContent = 'HTTP ' + p.statusCode;
       document.getElementById('modalWords').textContent = (p.wordCount || 0) + ' words';
 
+      const blocks = p.structuredContent || [];
+      document.getElementById('modalBlocksCount').textContent = blocks.length + ' structured blocks';
+
+      // Meta Description
+      const descEl = document.getElementById('modalDesc');
+      if (p.description && p.description.trim()) {
+        descEl.textContent = '“ ' + p.description.trim() + ' ”';
+        descEl.classList.remove('hidden');
+      } else {
+        descEl.classList.add('hidden');
+      }
+
       // Headings
       const hBox = document.getElementById('modalHeadings');
       hBox.innerHTML = (p.headings && p.headings.length)
         ? p.headings.map(h => `<div class="text-slate-300 font-mono text-[11px]">${h}</div>`).join('')
         : '<div class="text-slate-500">No headings found.</div>';
 
-      // Text
+      // Structured Blocks
+      const structBox = document.getElementById('modalStructured');
+      if (blocks.length > 0) {
+        structBox.innerHTML = blocks.map(b => {
+          if (b.type === 'HEADING') {
+            return `
+              <div class="pt-2 pb-1 border-b border-slate-800/80">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase mr-2">${b.tag}</span>
+                <span class="font-bold text-slate-100 text-xs">${escapeHtml(b.text)}</span>
+              </div>
+            `;
+          } else if (b.type === 'LIST_ITEM') {
+            return `
+              <div class="flex items-start gap-2 pl-2 text-slate-300 text-xs">
+                <span class="text-cyan-400 font-bold">•</span>
+                <span>${escapeHtml(b.text)}</span>
+              </div>
+            `;
+          } else if (b.type === 'QUOTE') {
+            return `
+              <blockquote class="border-l-2 border-cyan-500 pl-3 py-1 italic text-slate-400 bg-slate-900/50 rounded-r text-xs">
+                ${escapeHtml(b.text)}
+              </blockquote>
+            `;
+          } else if (b.type === 'CODE') {
+            return `
+              <pre class="bg-slate-900 p-2.5 rounded-lg font-mono text-[11px] text-emerald-400 overflow-x-auto border border-slate-800">${escapeHtml(b.text)}</pre>
+            `;
+          } else {
+            return `
+              <p class="text-slate-300 text-xs leading-relaxed bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60">
+                ${escapeHtml(b.text)}
+              </p>
+            `;
+          }
+        }).join('');
+      } else {
+        structBox.innerHTML = '<div class="text-slate-500">No structured blocks detected.</div>';
+      }
+
+      // Raw / Clean Text
       document.getElementById('modalText').textContent = p.textContent || 'No text extracted.';
 
       // Links
@@ -381,6 +473,11 @@
       const modal = document.getElementById('modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
     function closeModal() {

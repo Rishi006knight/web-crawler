@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Browser Window Outer Container -->
+  <rect width="512" height="512" rx="80" fill="#000000"/>
+  
+  <!-- Window Dots at Top-Left -->
+  <circle cx="76" cy="56" r="19" fill="#ffffff"/>
+  <circle cx="128" cy="56" r="19" fill="#ffffff"/>
+  <circle cx="180" cy="56" r="19" fill="#ffffff"/>
+  
+  <!-- Inner White Canvas with Tab Contour -->
+  <path d="M 56 128 C 56 114 67 104 80 104 L 236 104 C 248 104 254 96 258 86 C 263 74 271 56 288 56 L 432 56 C 446 56 456 67 456 80 L 456 432 C 456 446 446 456 432 456 L 80 456 C 66 456 56 446 56 432 Z" fill="#ffffff"/>
+  
+  <!-- Crawler Spider Body (Octagon) -->
+  <polygon points="234,210 278,210 309,241 309,285 278,316 234,316 203,285 203,241" fill="#000000"/>
+  
+  <!-- Crawler Spider Legs & Terminals -->
+  <!-- Top Left Leg -->
+  <path d="M 220 224 C 205 205 186 200 183 175" fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+  <rect x="169" y="154" width="28" height="40" rx="3" fill="#000000"/>
+  
+  <!-- Top Right Leg -->
+  <path d="M 292 224 C 307 205 326 200 329 175" fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+  <rect x="315" y="154" width="28" height="40" rx="3" fill="#000000"/>
+  
+  <!-- Middle Left Leg -->
+  <path d="M 203 260 C 172 260 156 250 146 235" fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+  <rect x="122" y="212" width="28" height="40" rx="3" transform="rotate(-30 136 232)" fill="#000000"/>
+  
+  <!-- Middle Right Leg -->
+  <path d="M 309 260 C 340 260 356 250 366 235" fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+  <rect x="362" y="212" width="28" height="40" rx="3" transform="rotate(30 376 232)" fill="#000000"/>
+  
+  <!-- Bottom Left Leg -->
+  <path d="M 218 300 C 196 324 186 332 183 340" fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+  <rect x="169" y="322" width="28" height="40" rx="3" fill="#000000"/>
+  
+  <!-- Bottom Right Leg -->
+  <path d="M 294 300 C 316 324 326 332 329 340" fill="none" stroke="#000000" stroke-width="15" stroke-linecap="round"/>
+  <rect x="315" y="322" width="28" height="40" rx="3" fill="#000000"/>
+</svg>

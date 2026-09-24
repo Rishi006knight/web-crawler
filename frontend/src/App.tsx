@@ -11,6 +11,7 @@ export function App() {
   const [currentJob, setCurrentJob] = useState<CrawlJob | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPage, setSelectedPage] = useState<PageData | null>(null);
+  const [isStructuredView, setIsStructuredView] = useState(true);
 
   const pollIntervalRef = useRef<number | null>(null);
 
@@ -95,7 +96,7 @@ export function App() {
     return (
       page.title.toLowerCase().includes(q) ||
       page.url.toLowerCase().includes(q) ||
-      page.textContent.toLowerCase().includes(q)
+      (page.textContent && page.textContent.toLowerCase().includes(q))
     );
   }) || [];
 
@@ -109,38 +110,19 @@ export function App() {
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-xl shadow-lg shadow-cyan-500/10">
-              🕷️
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-lg shadow-cyan-500/10 flex items-center justify-center bg-black p-0.5">
+              <img src="/crawler-icon.svg" alt="Web Crawler Icon" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                 Web Crawler
                 <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-medium">
-                  Simple & Fast
+                  Structured Content
                 </span>
               </h1>
-              <p className="text-xs text-slate-400">Extract titles, text, links, and images with one click</p>
+              <p className="text-xs text-slate-400">Extracts headings, structured paragraphs, lists, links, and images</p>
             </div>
           </div>
-
-          {currentJob && (
-            <div className="flex items-center gap-2">
-              <a
-                href={api.getExportUrl(currentJob.jobId, 'csv')}
-                download
-                className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5"
-              >
-                <span>📥</span> Export CSV
-              </a>
-              <a
-                href={api.getExportUrl(currentJob.jobId, 'json')}
-                download
-                className="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-1.5"
-              >
-                <span>📄</span> Export JSON
-              </a>
-            </div>
-          )}
         </div>
       </header>
 
@@ -301,7 +283,7 @@ export function App() {
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                Crawled Data
+                Crawled Pages
                 <span className="text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
                   {filteredPages.length} {filteredPages.length === 1 ? 'Page' : 'Pages'}
                 </span>
@@ -312,7 +294,7 @@ export function App() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter by title or URL..."
+                  placeholder="Filter by title, URL, or keywords..."
                   className="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
                 <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500 text-xs">
@@ -341,6 +323,7 @@ export function App() {
                         <th className="py-3 px-4">Page Title & URL</th>
                         <th className="py-3 px-3 text-center">Status</th>
                         <th className="py-3 px-3 text-center">Words</th>
+                        <th className="py-3 px-3 text-center">Blocks</th>
                         <th className="py-3 px-3 text-center">Links</th>
                         <th className="py-3 px-3 text-center">Images</th>
                         <th className="py-3 px-4 text-right">Action</th>
@@ -387,12 +370,17 @@ export function App() {
                             {page.wordCount.toLocaleString()}
                           </td>
                           <td className="py-3 px-3 text-center">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono text-[11px]">
+                              {page.structuredContent ? page.structuredContent.length : 0}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center">
                             <span className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[11px]">
                               {page.links.length}
                             </span>
                           </td>
                           <td className="py-3 px-3 text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono text-[11px]">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono text-[11px]">
                               {page.images.length}
                             </span>
                           </td>
@@ -425,7 +413,7 @@ export function App() {
             <h3 className="text-base font-bold text-white">Ready to Crawl</h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
               Enter any website URL above, pick your max pages limit, and click <strong>Start Crawl</strong>.
-              The crawler will extract all page titles, headings, body text, outgoing links, and images.
+              The crawler will extract structured headings, clean paragraphs, lists, links, and images.
             </p>
           </div>
         )}
@@ -438,7 +426,7 @@ export function App() {
           onClick={() => setSelectedPage(null)}
         >
           <div
-            className="bg-slate-900 border border-slate-700 w-full max-w-3xl max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="bg-slate-900 border border-slate-700 w-full max-w-3xl max-h-[88vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -457,6 +445,9 @@ export function App() {
                   <span className="text-xs text-slate-400 font-mono">
                     {selectedPage.wordCount} words
                   </span>
+                  <span className="text-xs text-purple-400 font-mono">
+                    {selectedPage.structuredContent ? selectedPage.structuredContent.length : 0} structured blocks
+                  </span>
                 </div>
                 <h3 className="text-base font-bold text-white truncate">
                   {selectedPage.title || 'Untitled Page'}
@@ -469,6 +460,11 @@ export function App() {
                 >
                   {selectedPage.url}
                 </a>
+                {selectedPage.description && (
+                  <p className="mt-2 text-xs text-slate-300 italic bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                    “ {selectedPage.description} ”
+                  </p>
+                )}
               </div>
               <button
                 type="button"
@@ -485,9 +481,9 @@ export function App() {
               {selectedPage.headings && selectedPage.headings.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                    <span>📌</span> Headings ({selectedPage.headings.length})
+                    <span>📌</span> Headings Hierarchy ({selectedPage.headings.length})
                   </h4>
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5 max-h-40 overflow-y-auto">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5 max-h-36 overflow-y-auto">
                     {selectedPage.headings.map((h, i) => (
                       <div key={i} className="text-slate-300 font-mono text-[11px] leading-relaxed">
                         {h}
@@ -497,14 +493,87 @@ export function App() {
                 </div>
               )}
 
-              {/* Text Content */}
+              {/* Structured Content Section */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <span>📝</span> Extracted Text Content
-                </h4>
-                <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-300 font-sans text-xs leading-relaxed max-h-56 overflow-y-auto whitespace-pre-line">
-                  {selectedPage.textContent || 'No text extracted.'}
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <span>📝</span> Structured Content
+                  </h4>
+                  <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setIsStructuredView(true)}
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                        isStructuredView
+                          ? 'bg-cyan-600 text-white'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Structured Blocks
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsStructuredView(false)}
+                      className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
+                        !isStructuredView
+                          ? 'bg-cyan-600 text-white'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Clean Text
+                    </button>
+                  </div>
                 </div>
+
+                {isStructuredView ? (
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 max-h-72 overflow-y-auto">
+                    {selectedPage.structuredContent && selectedPage.structuredContent.length > 0 ? (
+                      selectedPage.structuredContent.map((block, idx) => {
+                        if (block.type === 'HEADING') {
+                          return (
+                            <div key={idx} className="pt-2 pb-1 border-b border-slate-800/80">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase mr-2">
+                                {block.tag}
+                              </span>
+                              <span className="font-bold text-slate-100 text-xs">{block.text}</span>
+                            </div>
+                          );
+                        } else if (block.type === 'LIST_ITEM') {
+                          return (
+                            <div key={idx} className="flex items-start gap-2 pl-2 text-slate-300 text-xs">
+                              <span className="text-cyan-400 font-bold">•</span>
+                              <span>{block.text}</span>
+                            </div>
+                          );
+                        } else if (block.type === 'QUOTE') {
+                          return (
+                            <blockquote key={idx} className="border-l-2 border-cyan-500 pl-3 py-1 italic text-slate-400 bg-slate-900/50 rounded-r text-xs">
+                              {block.text}
+                            </blockquote>
+                          );
+                        } else if (block.type === 'CODE') {
+                          return (
+                            <pre key={idx} className="bg-slate-900 p-2.5 rounded-lg font-mono text-[11px] text-emerald-400 overflow-x-auto border border-slate-800">
+                              {block.text}
+                            </pre>
+                          );
+                        } else {
+                          return (
+                            <p key={idx} className="text-slate-300 text-xs leading-relaxed bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60">
+                              {block.text}
+                            </p>
+                          );
+                        }
+                      })
+                    ) : (
+                      <div className="text-slate-500">No structured blocks detected.</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-300 font-sans text-xs leading-relaxed max-h-72 overflow-y-auto whitespace-pre-line">
+                    {selectedPage.textContent || 'No text extracted.'}
+                  </div>
+                )}
               </div>
 
               {/* Discovered Outgoing Links */}
@@ -512,7 +581,7 @@ export function App() {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                   <span>🔗</span> Outgoing Links ({selectedPage.links.length})
                 </h4>
-                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-40 overflow-y-auto divide-y divide-slate-900">
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto divide-y divide-slate-900">
                   {selectedPage.links.length === 0 ? (
                     <div className="text-slate-500 text-[11px]">No outgoing links found on this page.</div>
                   ) : (
@@ -533,7 +602,7 @@ export function App() {
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                     <span>🖼️</span> Images ({selectedPage.images.length})
                   </h4>
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto space-y-1">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-32 overflow-y-auto space-y-1">
                     {selectedPage.images.map((img, i) => (
                       <div key={i} className="text-slate-400 font-mono text-[11px] truncate">
                         <a href={img} target="_blank" rel="noreferrer" className="hover:text-purple-400 hover:underline">
