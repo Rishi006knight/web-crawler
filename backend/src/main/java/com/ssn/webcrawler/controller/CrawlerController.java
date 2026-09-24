@@ -58,35 +58,9 @@ public class CrawlerController {
         return ResponseEntity.ok(Map.of("jobId", jobId, "stopped", stopped));
     }
 
-    @GetMapping("/crawl/{jobId}/export")
-    public ResponseEntity<byte[]> exportData(
-            @PathVariable String jobId,
-            @RequestParam(defaultValue = "csv") String format) {
-
-        CrawlJob job = crawlerService.getJob(jobId);
-        if (job == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        if ("json".equalsIgnoreCase(format)) {
-            String json = crawlerService.exportJson(jobId);
-            byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=crawl-" + jobId.substring(0, 8) + ".json")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(bytes);
-        } else {
-            String csv = crawlerService.exportCsv(jobId);
-            byte[] bytes = csv.getBytes(StandardCharsets.UTF_8);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=crawl-" + jobId.substring(0, 8) + ".csv")
-                    .contentType(MediaType.parseMediaType("text/csv"))
-                    .body(bytes);
-        }
-    }
-
     @GetMapping("/health")
     public ResponseEntity<?> health() {
         return ResponseEntity.ok(Map.of("status", "UP", "service", "Simple Web Crawler"));
     }
 }
+

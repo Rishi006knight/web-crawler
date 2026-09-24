@@ -30,9 +30,5 @@ export const api = {
     const res = await fetch(`${API_BASE}/crawl/latest`);
     if (res.status === 204 || !res.ok) return null;
     return res.json();
-  },
-
-  getExportUrl(jobId: string, format: 'csv' | 'json'): string {
-    return `${API_BASE}/crawl/${jobId}/export?format=${format}`;
   }
 };
