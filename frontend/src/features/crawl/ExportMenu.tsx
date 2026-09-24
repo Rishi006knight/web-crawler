@@ -101,87 +101,61 @@ export function ExportMenu({ job, pagesToExport, selectedCount }: ExportMenuProp
 
   const countLabel = selectedCount && selectedCount > 0 ? `(${selectedCount} Selected)` : `(${pagesToExport.length})`;
 
+  const menuItems = [
+    { onClick: exportJSON, icon: Code, iconColor: 'text-gradient-end', title: 'JSON File', desc: 'Full job structure with all blocks' },
+    { onClick: exportCSV, icon: Table, iconColor: 'text-status-success', title: 'CSV Spreadsheet', desc: 'Excel & Sheets ready' },
+    { onClick: exportMarkdown, icon: FileText, iconColor: 'text-gradient-start', title: 'Markdown Document', desc: 'Formatted text & link trees' },
+    { onClick: exportNDJSON, icon: Code, iconColor: 'text-gradient-pink', title: 'NDJSON Stream', desc: 'Line-delimited for large datasets' },
+  ];
+
   return (
     <div className="relative inline-block text-left">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 focus-ring transition"
+        className="inline-flex items-center space-x-2 px-4 py-2 text-xs font-medium rounded-2xl gradient-accent text-white shadow-soft hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] active:shadow-pressed focus-ring transition-all duration-200"
         aria-expanded={isOpen}
         aria-haspopup="true"
         aria-label="Export crawl results"
       >
-        <Download className="w-3.5 h-3.5 text-sky-500" />
+        <Download className="w-3.5 h-3.5" />
         <span>Export {countLabel}</span>
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
-          <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-50 py-1.5 focus-ring animate-in">
-            <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800/80 text-[10px] font-semibold tracking-wider uppercase text-slate-400">
+          <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-surface-raised border border-line shadow-floating z-50 py-2 animate-modal overflow-hidden">
+            <div className="px-4 py-2 border-b border-line text-[10px] font-semibold tracking-wider uppercase text-ink-muted">
               Export {countLabel}
             </div>
 
-            <button
-              type="button"
-              onClick={exportJSON}
-              className="w-full text-left px-3 py-2 text-xs flex items-center space-x-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <Code className="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <div>
-                <div className="font-medium">JSON File</div>
-                <div className="text-[10px] text-slate-400">Full job structure with all blocks</div>
-              </div>
-            </button>
+            {menuItems.map((item) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={item.onClick}
+                className="w-full text-left px-4 py-3 text-xs flex items-center space-x-3 text-ink hover:bg-surface-sunken hover:text-ink-strong transition-all duration-150"
+              >
+                <item.icon className={`w-4 h-4 ${item.iconColor} shrink-0`} />
+                <div>
+                  <div className="font-medium text-ink-strong">{item.title}</div>
+                  <div className="text-[10px] text-ink-muted">{item.desc}</div>
+                </div>
+              </button>
+            ))}
 
-            <button
-              type="button"
-              onClick={exportCSV}
-              className="w-full text-left px-3 py-2 text-xs flex items-center space-x-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <Table className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              <div>
-                <div className="font-medium">CSV Spreadsheet</div>
-                <div className="text-[10px] text-slate-400">Excel & Sheets ready</div>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={exportMarkdown}
-              className="w-full text-left px-3 py-2 text-xs flex items-center space-x-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <FileText className="w-4 h-4 text-sky-500 flex-shrink-0" />
-              <div>
-                <div className="font-medium">Markdown Document</div>
-                <div className="text-[10px] text-slate-400">Formatted text & link trees</div>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={exportNDJSON}
-              className="w-full text-left px-3 py-2 text-xs flex items-center space-x-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            >
-              <Code className="w-4 h-4 text-purple-500 flex-shrink-0" />
-              <div>
-                <div className="font-medium">NDJSON Stream</div>
-                <div className="text-[10px] text-slate-400">Line-delimited for large datasets</div>
-              </div>
-            </button>
-
-            <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+            <div className="my-1 border-t border-line" />
 
             <button
               type="button"
               onClick={copyMarkdownToClipboard}
-              className="w-full text-left px-3 py-2 text-xs flex items-center space-x-2.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="w-full text-left px-4 py-3 text-xs flex items-center space-x-3 text-ink hover:bg-surface-sunken hover:text-ink-strong transition-all duration-150"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
+              {copied ? <Check className="w-4 h-4 text-status-success" /> : <Copy className="w-4 h-4 text-ink-muted" />}
               <div>
-                <div className="font-medium">{copied ? 'Copied to Clipboard!' : 'Copy as Markdown'}</div>
-                <div className="text-[10px] text-slate-400">Quick paste into docs/notes</div>
+                <div className="font-medium text-ink-strong">{copied ? 'Copied to Clipboard!' : 'Copy as Markdown'}</div>
+                <div className="text-[10px] text-ink-muted">Quick paste into docs/notes</div>
               </div>
             </button>
           </div>

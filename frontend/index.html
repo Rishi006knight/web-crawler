@@ -5,9 +5,27 @@
     <link rel="icon" type="image/png" href="/crawler-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Crawler — Structured Content & Site Inspector</title>
-    <meta name="description" content="Production-ready web crawler platform with BFS crawling, SSRF protection, robots.txt compliance, and structured content extraction." />
+    <meta name="description" content="Premium web crawler platform with BFS crawling, SSRF protection, robots.txt compliance, and structured content extraction." />
     <link rel="canonical" href="https://web-crawler-ashy.vercel.app/" />
-    <meta name="theme-color" content="#020617" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFBF0" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0C0A1A" />
+
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('webcrawler-theme');
+          var theme = stored ? stored : 'light';
+          if (theme === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -25,9 +43,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-black">
+  <body class="bg-canvas text-ink antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

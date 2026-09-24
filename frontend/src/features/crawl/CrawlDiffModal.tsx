@@ -67,17 +67,17 @@ export function CrawlDiffModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="diff-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade"
     >
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-surface-raised border border-line rounded-t-3xl sm:rounded-2xl w-full max-w-4xl max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-floating overflow-hidden animate-sheet sm:animate-modal transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
           <div className="flex items-center space-x-2.5">
-            <GitCompare className="w-5 h-5 text-sky-500" />
-            <h2 id="diff-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <GitCompare className="w-5 h-5 text-brand" />
+            <h2 id="diff-title" className="text-base font-bold text-ink-strong">
               Crawl Comparison
             </h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-ink-muted">
               ({baseTitle} vs {targetTitle})
             </span>
           </div>
@@ -85,21 +85,21 @@ export function CrawlDiffModal({
             type="button"
             onClick={onClose}
             aria-label="Close comparison modal"
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-sunken transition focus-ring"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Metric summary pills */}
-        <div className="flex items-center space-x-3 px-6 py-3 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800 text-xs">
+        <div className="flex items-center space-x-2 px-6 py-3 bg-surface-sunken border-b border-line text-xs overflow-x-auto shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition focus-ring ${
               activeTab === 'all'
-                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-surface-raised text-ink-strong shadow-hairline border border-line'
+                : 'text-ink-secondary hover:text-ink hover:bg-surface/50 border border-transparent'
             }`}
           >
             All Changes ({added.length + removed.length + changed.length})
@@ -107,45 +107,45 @@ export function CrawlDiffModal({
           <button
             type="button"
             onClick={() => setActiveTab('added')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 focus-ring ${
               activeTab === 'added'
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-status-success-bg text-status-success border border-status-success-line'
+                : 'text-ink-secondary hover:text-ink hover:bg-surface/50 border border-transparent'
             }`}
           >
-            <PlusCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <PlusCircle className="w-3.5 h-3.5 text-status-success" />
             <span>Added ({added.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('removed')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 focus-ring ${
               activeTab === 'removed'
-                ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-status-danger-bg text-status-danger border border-status-danger-line'
+                : 'text-ink-secondary hover:text-ink hover:bg-surface/50 border border-transparent'
             }`}
           >
-            <MinusCircle className="w-3.5 h-3.5 text-red-500" />
+            <MinusCircle className="w-3.5 h-3.5 text-status-danger" />
             <span>Removed ({removed.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('changed')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 ${
+            className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center space-x-1.5 focus-ring ${
               activeTab === 'changed'
-                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-status-warning-bg text-status-warning border border-status-warning-line'
+                : 'text-ink-secondary hover:text-ink hover:bg-surface/50 border border-transparent'
             }`}
           >
-            <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+            <AlertCircle className="w-3.5 h-3.5 text-status-warning" />
             <span>Changed ({changed.length})</span>
           </button>
         </div>
 
         {/* Diff Content List */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-6 space-y-3 text-left">
           {added.length === 0 && removed.length === 0 && changed.length === 0 && (
-            <div className="text-center py-12 text-sm text-slate-500 dark:text-slate-400">
+            <div className="text-center py-12 text-sm text-ink-muted">
               No differences detected between these two crawl snapshots.
             </div>
           )}
@@ -154,16 +154,16 @@ export function CrawlDiffModal({
             added.map((page) => (
               <div
                 key={`added-${page.url}`}
-                className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-xs space-y-1"
+                className="p-3.5 rounded-xl border border-status-success-line bg-status-success-bg text-xs space-y-1"
               >
-                <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <PlusCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <div className="flex items-center space-x-2 text-status-success font-semibold">
+                  <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Added Page: {page.title || 'Untitled'}</span>
                 </div>
-                <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px] truncate">
+                <div className="text-ink font-mono text-[11px] truncate">
                   {page.url}
                 </div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-[11px] text-ink-muted">
                   Status: {page.statusCode} • Words: {page.wordCount}
                 </div>
               </div>
@@ -173,16 +173,16 @@ export function CrawlDiffModal({
             removed.map((page) => (
               <div
                 key={`removed-${page.url}`}
-                className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 text-xs space-y-1"
+                className="p-3.5 rounded-xl border border-status-danger-line bg-status-danger-bg text-xs space-y-1"
               >
-                <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 font-semibold">
-                  <MinusCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <div className="flex items-center space-x-2 text-status-danger font-semibold">
+                  <MinusCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Removed Page: {page.title || 'Untitled'}</span>
                 </div>
-                <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px] truncate">
+                <div className="text-ink font-mono text-[11px] truncate">
                   {page.url}
                 </div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-[11px] text-ink-muted">
                   Prior Status: {page.statusCode} • Prior Words: {page.wordCount}
                 </div>
               </div>
@@ -192,20 +192,20 @@ export function CrawlDiffModal({
             changed.map((item) => (
               <div
                 key={`changed-${item.url}`}
-                className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 text-xs space-y-2"
+                className="p-3.5 rounded-xl border border-status-warning-line bg-status-warning-bg text-xs space-y-2"
               >
-                <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-400 font-semibold">
-                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <div className="flex items-center space-x-2 text-status-warning font-semibold">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Changed Page: {item.after.title || 'Untitled'}</span>
                 </div>
-                <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px] truncate">
+                <div className="text-ink font-mono text-[11px] truncate">
                   {item.url}
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {item.changes.map((ch, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-medium"
+                      className="px-2 py-0.5 rounded bg-surface-raised text-status-warning border border-status-warning-line text-[10px] font-medium"
                     >
                       {ch}
                     </span>

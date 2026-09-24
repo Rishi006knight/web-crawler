@@ -5,7 +5,7 @@ export function BrandIcon({ className = 'w-7 h-7' }: { className?: string }) {
     <img
       src="/crawler-icon.png"
       alt="Web Crawler Brand Icon"
-      className={`inline-block object-contain rounded-lg shadow-sm border border-slate-700/40 bg-white/10 backdrop-blur-sm ${className}`}
+      className={`inline-block object-contain rounded-lg shadow-hairline border border-line bg-surface-raised ${className}`}
     />
   );
 }

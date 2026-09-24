@@ -68,44 +68,45 @@ export function InspectorModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="inspector-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fade"
     >
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-2xl overflow-hidden focus-ring">
+      {/* Solid opaque modal container - NOT transparent */}
+      <div className="bg-surface-raised border border-line rounded-t-3xl sm:rounded-3xl w-full max-w-4xl h-[92vh] sm:h-[85vh] flex flex-col shadow-floating overflow-hidden animate-sheet sm:animate-modal">
         {/* Header Bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0 bg-surface-raised">
           <div className="flex items-center space-x-3 truncate mr-3">
             <span
-              className={`px-2 py-0.5 text-xs font-mono font-bold rounded-full border ${
+              className={`px-2.5 py-1 text-xs font-mono font-bold rounded-full ${
                 page.statusCode < 300
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                  : 'bg-red-500/10 text-red-500 border-red-500/20'
+                  ? 'bg-status-success-bg text-status-success'
+                  : 'bg-status-danger-bg text-status-danger'
               }`}
             >
               {page.statusCode}
             </span>
             <div className="truncate">
-              <h2 id="inspector-title" className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+              <h2 id="inspector-title" className="text-sm font-bold text-ink-strong truncate">
                 {page.title || 'Untitled Page'}
               </h2>
               <a
                 href={page.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[11px] font-mono text-slate-400 hover:text-sky-500 flex items-center space-x-1 truncate"
+                className="text-[11px] font-mono text-ink-muted hover:text-gradient-start flex items-center space-x-1 truncate transition"
               >
                 <span className="truncate">{page.url}</span>
-                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                <ExternalLink className="w-3 h-3 shrink-0" />
               </a>
             </div>
           </div>
 
-          <div className="flex items-center space-x-1.5 flex-shrink-0">
+          <div className="flex items-center space-x-1.5 shrink-0">
             {hasPrev && (
               <button
                 type="button"
                 onClick={onPrev}
                 aria-label="Previous page (Ctrl+Left)"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="p-2 rounded-xl text-ink-muted hover:text-ink emboss hover:shadow-glow-sm transition-all focus-ring"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -115,7 +116,7 @@ export function InspectorModal({
                 type="button"
                 onClick={onNext}
                 aria-label="Next page (Ctrl+Right)"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                className="p-2 rounded-xl text-ink-muted hover:text-ink emboss hover:shadow-glow-sm transition-all focus-ring"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -124,15 +125,15 @@ export function InspectorModal({
               type="button"
               onClick={onClose}
               aria-label="Close inspector modal"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition ml-2"
+              className="p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-status-danger-bg transition-all ml-1 focus-ring"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center space-x-1 px-6 border-b border-slate-200 dark:border-slate-800 overflow-x-auto text-xs bg-slate-50/50 dark:bg-slate-950/40">
+        {/* Tab Navigation - SOLID background, not transparent */}
+        <div className="flex items-center space-x-1 px-6 border-b border-line overflow-x-auto text-xs bg-surface-sunken shrink-0">
           {[
             { id: 'overview', label: 'Overview', icon: Globe },
             { id: 'blocks', label: 'Blocks', count: page.structuredContent?.length, icon: Layers },
@@ -149,16 +150,16 @@ export function InspectorModal({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as TabType)}
-                className={`flex items-center space-x-1.5 py-3 px-3 font-medium border-b-2 transition whitespace-nowrap ${
+                className={`flex items-center space-x-1.5 py-3 px-3.5 font-medium border-b-2 transition-all whitespace-nowrap focus-ring ${
                   isActive
-                    ? 'border-sky-500 text-sky-600 dark:text-sky-400 font-semibold'
-                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                    ? 'border-gradient-start text-ink-strong font-semibold'
+                    : 'border-transparent text-ink-secondary hover:text-ink'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-gradient-start' : ''}`} />
                 <span>{tab.label}</span>
                 {tab.count !== undefined && (
-                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-surface-sunken text-ink-secondary font-mono">
                     {tab.count}
                   </span>
                 )}
@@ -167,54 +168,43 @@ export function InspectorModal({
           })}
         </div>
 
-        {/* Tab Content Panel */}
-        <div className="flex-1 overflow-y-auto p-6 text-left">
+        {/* Tab Content Panel - SOLID background */}
+        <div className="flex-1 overflow-y-auto p-6 text-left bg-surface-raised">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
-                  <div className="text-xs text-slate-400">HTTP Status</div>
-                  <div className="text-xl font-bold font-mono text-slate-800 dark:text-slate-100 mt-1">
-                    {page.statusCode}
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'HTTP Status', value: page.statusCode, color: 'text-gradient-start' },
+                  { label: 'Word Count', value: (page.wordCount || 0).toLocaleString(), color: 'text-gradient-end' },
+                  { label: 'Links Extracted', value: page.links?.length || 0, color: 'text-status-success' },
+                  { label: 'Images Found', value: page.images?.length || 0, color: 'text-gradient-pink' },
+                ].map((stat, i) => (
+                  <div key={stat.label} className="p-4 rounded-2xl glass emboss space-y-1.5 stagger-item animate-slide-up" style={{ animationDelay: `${i * 60}ms` }}>
+                    <div className="text-[10px] text-ink-muted uppercase tracking-wider font-medium">{stat.label}</div>
+                    <div className={`text-xl font-bold font-mono text-ink-strong animate-count-up`}>
+                      {stat.value}
+                    </div>
                   </div>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
-                  <div className="text-xs text-slate-400">Word Count</div>
-                  <div className="text-xl font-bold font-mono text-slate-800 dark:text-slate-100 mt-1">
-                    {(page.wordCount || 0).toLocaleString()}
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
-                  <div className="text-xs text-slate-400">Links Extracted</div>
-                  <div className="text-xl font-bold font-mono text-slate-800 dark:text-slate-100 mt-1">
-                    {page.links?.length || 0}
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
-                  <div className="text-xs text-slate-400">Images Found</div>
-                  <div className="text-xl font-bold font-mono text-slate-800 dark:text-slate-100 mt-1">
-                    {page.images?.length || 0}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {page.description && (
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-1">
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <div className="p-5 rounded-2xl glass emboss space-y-2">
+                  <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
                     Meta Description
                   </div>
-                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                  <p className="text-sm text-ink leading-relaxed">
                     {page.description}
                   </p>
                 </div>
               )}
 
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-2">
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <div className="p-5 rounded-2xl glass emboss space-y-2">
+                <div className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
                   Crawl Timestamp
                 </div>
-                <div className="text-sm font-mono text-slate-700 dark:text-slate-300 flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-sky-500" />
+                <div className="text-sm font-mono text-ink flex items-center space-x-2">
+                  <Clock className="w-4 h-4 text-gradient-start" />
                   <span>{new Date(page.crawlTimestamp).toLocaleString()}</span>
                 </div>
               </div>
@@ -224,19 +214,20 @@ export function InspectorModal({
           {activeTab === 'blocks' && (
             <div className="space-y-3">
               {(!page.structuredContent || page.structuredContent.length === 0) ? (
-                <div className="text-sm text-slate-400 py-8 text-center">No structured blocks parsed.</div>
+                <div className="text-sm text-ink-muted py-8 text-center">No structured blocks parsed.</div>
               ) : (
                 page.structuredContent.map((block, index) => (
                   <div
                     key={index}
-                    className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 space-y-1"
+                    className="p-4 rounded-2xl glass emboss space-y-2 stagger-item animate-slide-up"
+                    style={{ animationDelay: `${index * 40}ms` }}
                   >
                     <div className="flex items-center space-x-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider gradient-accent text-white">
                         {block.type} ({block.tag})
                       </span>
                     </div>
-                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
+                    <p className="text-sm text-ink leading-relaxed">
                       {block.text}
                     </p>
                   </div>
@@ -251,13 +242,13 @@ export function InspectorModal({
                 <button
                   type="button"
                   onClick={() => copyText(page.textContent || '')}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-medium glass emboss text-ink hover:text-ink-strong transition-all duration-200 hover:shadow-glow-sm focus-ring active:shadow-pressed active:scale-[0.98]"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-status-success" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'Copied!' : 'Copy Clean Text'}</span>
                 </button>
               </div>
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-[60vh] overflow-y-auto">
+              <div className="p-5 rounded-2xl bg-surface-sunken border border-line text-xs sm:text-sm font-mono text-ink whitespace-pre-wrap leading-relaxed max-h-[60vh] overflow-y-auto">
                 {page.textContent || 'No text extracted.'}
               </div>
             </div>
@@ -266,7 +257,7 @@ export function InspectorModal({
           {activeTab === 'headings' && (
             <div className="space-y-2">
               {(!page.headings || page.headings.length === 0) ? (
-                <div className="text-sm text-slate-400 py-8 text-center">No headings found on this page.</div>
+                <div className="text-sm text-ink-muted py-8 text-center">No headings found on this page.</div>
               ) : (
                 page.headings.map((heading, index) => {
                   const [level, ...rest] = heading.split(': ');
@@ -274,12 +265,13 @@ export function InspectorModal({
                   return (
                     <div
                       key={index}
-                      className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex items-center space-x-3 text-xs"
+                      className="p-3.5 rounded-xl glass emboss flex items-center space-x-3 text-xs stagger-item animate-slide-up"
+                      style={{ animationDelay: `${index * 30}ms` }}
                     >
-                      <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-sky-500/10 text-sky-500">
+                      <span className="px-2.5 py-0.5 rounded-full font-mono font-bold text-[10px] gradient-accent text-white">
                         {level}
                       </span>
-                      <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                      <span className="font-medium text-ink truncate">
                         {text || heading}
                       </span>
                     </div>
@@ -292,14 +284,15 @@ export function InspectorModal({
           {activeTab === 'links' && (
             <div className="space-y-2">
               {(!page.links || page.links.length === 0) ? (
-                <div className="text-sm text-slate-400 py-8 text-center">No links extracted.</div>
+                <div className="text-sm text-ink-muted py-8 text-center">No links extracted.</div>
               ) : (
                 page.links.map((link, index) => (
                   <div
                     key={index}
-                    className="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex items-center justify-between text-xs space-x-2"
+                    className="p-3 rounded-xl glass emboss flex items-center justify-between text-xs space-x-2 stagger-item animate-slide-up"
+                    style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}
                   >
-                    <span className="font-mono text-slate-700 dark:text-slate-300 truncate">
+                    <span className="font-mono text-ink truncate">
                       {link}
                     </span>
                     <a
@@ -307,7 +300,7 @@ export function InspectorModal({
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Open ${link}`}
-                      className="p-1 rounded text-slate-400 hover:text-sky-500"
+                      className="p-1.5 rounded-lg text-ink-muted hover:text-gradient-start focus-ring transition"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -320,14 +313,15 @@ export function InspectorModal({
           {activeTab === 'images' && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {(!page.images || page.images.length === 0) ? (
-                <div className="col-span-full text-sm text-slate-400 py-8 text-center">No images found.</div>
+                <div className="col-span-full text-sm text-ink-muted py-8 text-center">No images found.</div>
               ) : (
                 page.images.map((img, index) => (
                   <div
                     key={index}
-                    className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-900 space-y-2 p-2 text-xs"
+                    className="rounded-2xl glass emboss overflow-hidden space-y-2 p-2.5 text-xs stagger-item animate-slide-up hover:-translate-y-0.5 hover:shadow-floating transition-all duration-200"
+                    style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
                   >
-                    <div className="aspect-video bg-slate-200 dark:bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center">
+                    <div className="aspect-video bg-surface-sunken rounded-xl overflow-hidden flex items-center justify-center">
                       <img
                         src={img}
                         alt={`Extracted ${index}`}
@@ -337,7 +331,7 @@ export function InspectorModal({
                         }}
                       />
                     </div>
-                    <div className="font-mono text-[10px] text-slate-400 truncate px-1">
+                    <div className="font-mono text-[10px] text-ink-muted truncate px-1">
                       {img}
                     </div>
                   </div>
@@ -352,13 +346,13 @@ export function InspectorModal({
                 <button
                   type="button"
                   onClick={() => copyText(JSON.stringify(page, null, 2))}
-                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-medium glass emboss text-ink hover:text-ink-strong transition-all duration-200 hover:shadow-glow-sm focus-ring active:shadow-pressed active:scale-[0.98]"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-status-success" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
                 </button>
               </div>
-              <pre className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 overflow-x-auto max-h-[60vh]">
+              <pre className="p-5 rounded-2xl bg-surface-sunken border border-line text-xs font-mono text-ink overflow-x-auto max-h-[60vh]">
                 {JSON.stringify(page, null, 2)}
               </pre>
             </div>

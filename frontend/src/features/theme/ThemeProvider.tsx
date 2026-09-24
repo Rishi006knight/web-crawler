@@ -20,10 +20,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {
       // LocalStorage access restricted
     }
-    return 'dark'; // default to sleek dark
+    return 'light'; // Light-first default
   });
 
-  const [isDark, setIsDark] = useState<boolean>(true);
+  const [isDark, setIsDark] = useState<boolean>(false);
 
   useEffect(() => {
     const root = document.documentElement;

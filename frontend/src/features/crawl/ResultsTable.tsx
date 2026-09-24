@@ -60,12 +60,12 @@ export const ResultsTable = memo(function ResultsTable({
 
   const renderSortIndicator = (field: SortField) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100" />;
+      return <ArrowUpDown className="w-3.5 h-3.5 opacity-30 group-hover:opacity-80 transition" />;
     }
     return sortOrder === 'asc' ? (
-      <ArrowUp className="w-3.5 h-3.5 text-sky-500" />
+      <ArrowUp className="w-3.5 h-3.5 text-gradient-start" />
     ) : (
-      <ArrowDown className="w-3.5 h-3.5 text-sky-500" />
+      <ArrowDown className="w-3.5 h-3.5 text-gradient-start" />
     );
   };
 
@@ -74,7 +74,7 @@ export const ResultsTable = memo(function ResultsTable({
     const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return parts.map((part, i) =>
       part.toLowerCase() === query.toLowerCase() ? (
-        <mark key={i} className="bg-amber-500/20 text-amber-600 dark:text-amber-300 font-semibold px-0.5 rounded">
+        <mark key={i} className="bg-gradient-to-r from-gradient-start/20 to-gradient-end/20 text-ink-strong font-semibold px-0.5 rounded">
           {part}
         </mark>
       ) : (
@@ -84,125 +84,86 @@ export const ResultsTable = memo(function ResultsTable({
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <div className="w-full overflow-hidden rounded-3xl glass-panel animate-fade">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <caption className="sr-only">Web Crawler Discovered Pages Table</caption>
-          <thead className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 select-none">
+          <thead className="bg-surface-sunken border-b border-line sticky top-0 z-10 select-none">
             <tr>
-              <th scope="col" className="p-3 w-10 text-center">
+              <th scope="col" className="p-3.5 w-10 text-center">
                 <button
                   type="button"
                   onClick={onToggleSelectAll}
                   aria-label={allSelected ? 'Deselect all rows' : 'Select all rows'}
-                  className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus-ring"
+                  className="p-1 rounded-lg text-ink-muted hover:text-ink focus-ring transition"
                 >
                   {allSelected ? (
-                    <CheckSquare className="w-4 h-4 text-sky-500" />
+                    <CheckSquare className="w-4 h-4 text-gradient-start" />
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
                 </button>
               </th>
 
-              <th
-                scope="col"
-                aria-sort={sortField === 'title' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="p-3 font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group"
-                onClick={() => handleSort('title')}
-              >
-                <div className="flex items-center space-x-1.5">
-                  <span>Page Title & URL</span>
-                  {renderSortIndicator('title')}
-                </div>
-              </th>
+              {[
+                { field: 'title' as SortField, label: 'Page Title & URL', align: 'text-left' },
+                { field: 'statusCode' as SortField, label: 'Status', align: 'text-center', w: 'w-20' },
+                { field: 'wordCount' as SortField, label: 'Words', align: 'text-right', w: 'w-24' },
+                { field: 'links' as SortField, label: 'Links', align: 'text-center', w: 'w-20' },
+                { field: 'images' as SortField, label: 'Images', align: 'text-center', w: 'w-20' },
+              ].map((col) => (
+                <th
+                  key={col.field}
+                  scope="col"
+                  aria-sort={sortField === col.field ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  className={`p-3.5 font-semibold text-ink-strong cursor-pointer group ${col.align} ${col.w || ''}`}
+                  onClick={() => handleSort(col.field)}
+                >
+                  <div className={`flex items-center space-x-1.5 ${col.align === 'text-right' ? 'justify-end' : col.align === 'text-center' ? 'justify-center' : ''}`}>
+                    <span>{col.label}</span>
+                    {renderSortIndicator(col.field)}
+                  </div>
+                </th>
+              ))}
 
-              <th
-                scope="col"
-                aria-sort={sortField === 'statusCode' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="p-3 font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group w-20 text-center"
-                onClick={() => handleSort('statusCode')}
-              >
-                <div className="flex items-center justify-center space-x-1.5">
-                  <span>Status</span>
-                  {renderSortIndicator('statusCode')}
-                </div>
-              </th>
-
-              <th
-                scope="col"
-                aria-sort={sortField === 'wordCount' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="p-3 font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group w-24 text-right"
-                onClick={() => handleSort('wordCount')}
-              >
-                <div className="flex items-center justify-end space-x-1.5">
-                  <span>Words</span>
-                  {renderSortIndicator('wordCount')}
-                </div>
-              </th>
-
-              <th
-                scope="col"
-                aria-sort={sortField === 'links' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="p-3 font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group w-20 text-center"
-                onClick={() => handleSort('links')}
-              >
-                <div className="flex items-center justify-center space-x-1.5">
-                  <span>Links</span>
-                  {renderSortIndicator('links')}
-                </div>
-              </th>
-
-              <th
-                scope="col"
-                aria-sort={sortField === 'images' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className="p-3 font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group w-20 text-center"
-                onClick={() => handleSort('images')}
-              >
-                <div className="flex items-center justify-center space-x-1.5">
-                  <span>Images</span>
-                  {renderSortIndicator('images')}
-                </div>
-              </th>
-
-              <th scope="col" className="p-3 w-20 text-center">
-                <span className="sr-only">Actions</span>
-                <span>Action</span>
+              <th scope="col" className="p-3.5 w-24 text-center">
+                <span className="text-ink-strong font-semibold">Action</span>
               </th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {sortedPages.map((page) => {
+          <tbody className="divide-y divide-line">
+            {sortedPages.map((page, i) => {
               const isSelected = selectedPages.has(page.url);
               return (
                 <tr
                   key={page.url}
-                  className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition cursor-pointer ${
-                    isSelected ? 'bg-sky-500/5' : ''
+                  className={`hover:bg-surface-sunken transition-all duration-150 cursor-pointer ${
+                    isSelected ? 'bg-brand-subtle' : ''
                   }`}
                   onClick={() => onSelectPage(page)}
+                  style={{ animationDelay: `${i * 30}ms` }}
                 >
-                  <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       onClick={() => onToggleSelectPage(page.url)}
                       aria-label={`Select row for ${page.title}`}
-                      className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus-ring"
+                      className="p-1 rounded-lg text-ink-muted hover:text-ink focus-ring transition"
                     >
                       {isSelected ? (
-                        <CheckSquare className="w-4 h-4 text-sky-500" />
+                        <CheckSquare className="w-4 h-4 text-gradient-start" />
                       ) : (
                         <Square className="w-4 h-4" />
                       )}
                     </button>
                   </td>
 
-                  <td className="p-3 max-w-sm sm:max-w-md truncate">
-                    <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                  <td className="p-3.5 max-w-sm sm:max-w-md truncate">
+                    <div className="font-semibold text-ink-strong truncate">
                       {highlightMatch(page.title || 'Untitled Page', searchQuery)}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono truncate mt-0.5 flex items-center space-x-1">
+                    <div className="text-[11px] text-ink-muted font-mono truncate mt-0.5 flex items-center space-x-1">
                       <span className="truncate">{highlightMatch(page.url, searchQuery)}</span>
                       <a
                         href={page.url}
@@ -210,47 +171,47 @@ export const ResultsTable = memo(function ResultsTable({
                         rel="noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         aria-label={`Open ${page.url} in new tab`}
-                        className="text-slate-400 hover:text-sky-500 inline-flex flex-shrink-0"
+                        className="text-ink-muted hover:text-gradient-start inline-flex shrink-0 transition"
                       >
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
                   </td>
 
-                  <td className="p-3 text-center">
+                  <td className="p-3.5 text-center">
                     <span
-                      className={`inline-flex px-2 py-0.5 text-[11px] font-mono font-semibold rounded-full border ${
+                      className={`inline-flex px-2.5 py-0.5 text-[11px] font-mono font-bold rounded-full ${
                         page.statusCode < 300
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          ? 'bg-status-success-bg text-status-success'
                           : page.statusCode < 400
-                          ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
-                          : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                          ? 'bg-status-info-bg text-status-info'
+                          : 'bg-status-danger-bg text-status-danger'
                       }`}
                     >
                       {page.statusCode}
                     </span>
                   </td>
 
-                  <td className="p-3 text-right font-mono text-slate-700 dark:text-slate-300">
+                  <td className="p-3.5 text-right font-mono text-ink">
                     {(page.wordCount || 0).toLocaleString()}
                   </td>
 
-                  <td className="p-3 text-center font-mono text-slate-500 dark:text-slate-400">
+                  <td className="p-3.5 text-center font-mono text-ink-secondary">
                     {page.links ? page.links.length : 0}
                   </td>
 
-                  <td className="p-3 text-center font-mono text-slate-500 dark:text-slate-400">
+                  <td className="p-3.5 text-center font-mono text-ink-secondary">
                     {page.images ? page.images.length : 0}
                   </td>
 
-                  <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       onClick={() => onSelectPage(page)}
                       aria-label={`Inspect ${page.title}`}
-                      className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 focus-ring transition"
+                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium glass emboss text-ink hover:text-ink-strong focus-ring transition-all duration-200 hover:shadow-glow-sm active:shadow-pressed active:scale-[0.98]"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-gradient-start" />
                       <span>Inspect</span>
                     </button>
                   </td>

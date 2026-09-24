@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Settings2, ShieldCheck, ShieldAlert, Check, AlertCircle } from 'lucide-react';
+import { Play, Settings2, ShieldCheck, ShieldAlert, Check, AlertCircle, Search, Globe } from 'lucide-react';
 import { CrawlRequest } from '../../types';
-import { Button } from '../../components/ui/Button';
 
 interface CrawlFormProps {
   onSubmit: (request: CrawlRequest) => void;
@@ -73,71 +72,80 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm space-y-4 text-left"
+      className="rounded-3xl glass-panel p-6 sm:p-8 space-y-5 text-left animate-slide-up"
     >
-      {/* URL Input Bar */}
+      {/* Hero Title */}
       <div className="space-y-1.5">
-        <label htmlFor="target-url" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <h2 className="text-lg sm:text-xl font-bold text-ink-strong flex items-center space-x-2">
+          <Globe className="w-5 h-5 text-gradient-start" />
+          <span>Crawl any website</span>
+        </h2>
+        <p className="text-xs sm:text-sm text-ink-secondary">
+          Analyze structure. Extract data. Discover insights.
+        </p>
+      </div>
+
+      {/* URL Input Bar */}
+      <div className="space-y-2">
+        <label htmlFor="target-url" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted">
           Target Seed URL
         </label>
         <div className="relative flex items-center">
+          <div className="absolute left-4">
+            <Search className="w-5 h-5 text-ink-muted" />
+          </div>
           <input
             id="target-url"
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://example.com"
+            placeholder="Enter URL to analyze..."
             disabled={isLoading}
             required
-            className={`w-full pl-4 pr-10 py-3 text-sm rounded-xl bg-white dark:bg-slate-950 border text-slate-900 dark:text-slate-100 placeholder-slate-400 focus-ring transition shadow-inner ${
+            className={`w-full pl-12 pr-12 py-4 text-sm rounded-2xl bg-surface-raised border-2 text-ink-strong placeholder:text-ink-muted focus-ring transition-all duration-300 emboss ${
               urlError
-                ? 'border-red-500 focus:border-red-500'
+                ? 'border-status-danger focus:border-status-danger focus:shadow-none'
                 : isUrlValid
-                ? 'border-emerald-500/80 focus:border-emerald-500'
-                : 'border-slate-300 dark:border-slate-700 focus:border-sky-500'
+                ? 'border-status-success/50 focus:border-status-success focus:shadow-glow-sm'
+                : 'border-line hover:border-line-strong focus:border-gradient-start focus:shadow-glow-sm'
             }`}
           />
-          <div className="absolute right-3">
+          <div className="absolute right-4">
             {isUrlValid ? (
-              <Check className="w-5 h-5 text-emerald-500" aria-label="Valid URL" />
+              <div className="w-6 h-6 rounded-full gradient-accent flex items-center justify-center">
+                <Check className="w-3.5 h-3.5 text-white" aria-label="Valid URL" />
+              </div>
             ) : urlError ? (
-              <AlertCircle className="w-5 h-5 text-red-500" aria-label="Invalid URL" />
+              <AlertCircle className="w-5 h-5 text-status-danger" aria-label="Invalid URL" />
             ) : null}
           </div>
         </div>
-        {urlError && <p className="text-xs text-red-500 font-medium">{urlError}</p>}
+        {urlError && <p className="text-xs text-status-danger font-medium">{urlError}</p>}
       </div>
 
       {/* Preset Targets */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-slate-400 font-medium text-[11px]">Presets:</span>
-        <button
-          type="button"
-          onClick={() => setPreset('https://books.toscrape.com', 20, 2)}
-          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition border border-slate-200 dark:border-slate-700/60 font-mono text-[11px]"
-        >
-          books.toscrape.com
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreset('https://quotes.toscrape.com', 10, 2)}
-          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition border border-slate-200 dark:border-slate-700/60 font-mono text-[11px]"
-        >
-          quotes.toscrape.com
-        </button>
-        <button
-          type="button"
-          onClick={() => setPreset('https://example.com', 5, 1)}
-          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition border border-slate-200 dark:border-slate-700/60 font-mono text-[11px]"
-        >
-          example.com
-        </button>
+        <span className="text-ink-muted font-medium text-[11px] uppercase tracking-wider">Try:</span>
+        {[
+          { label: 'books.toscrape.com', url: 'https://books.toscrape.com', pages: 20, depth: 2 },
+          { label: 'quotes.toscrape.com', url: 'https://quotes.toscrape.com', pages: 10, depth: 2 },
+          { label: 'example.com', url: 'https://example.com', pages: 5, depth: 1 },
+        ].map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => setPreset(preset.url, preset.pages, preset.depth)}
+            className="px-3 py-1.5 rounded-xl glass emboss text-ink-secondary hover:text-ink-strong transition-all duration-200 font-mono text-[11px] hover:shadow-glow-sm active:shadow-pressed active:scale-[0.98]"
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
       {/* Primary Options Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
-          <label htmlFor="max-pages-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+          <label htmlFor="max-pages-select" className="block text-xs font-semibold text-ink-strong mb-1.5">
             Max Pages
           </label>
           <select
@@ -145,7 +153,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
             value={maxPages}
             onChange={(e) => setMaxPages(Number(e.target.value))}
             disabled={isLoading}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus-ring"
+            className="w-full px-3 py-2.5 text-sm rounded-xl bg-surface-raised border border-line text-ink-strong focus-ring emboss cursor-pointer"
           >
             <option value={10}>10 pages</option>
             <option value={20}>20 pages</option>
@@ -156,7 +164,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
         </div>
 
         <div>
-          <label htmlFor="max-depth-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+          <label htmlFor="max-depth-select" className="block text-xs font-semibold text-ink-strong mb-1.5">
             Max Depth
           </label>
           <select
@@ -164,7 +172,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
             value={maxDepth}
             onChange={(e) => setMaxDepth(Number(e.target.value))}
             disabled={isLoading}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus-ring"
+            className="w-full px-3 py-2.5 text-sm rounded-xl bg-surface-raised border border-line text-ink-strong focus-ring emboss cursor-pointer"
           >
             <option value={1}>1 (Seed only)</option>
             <option value={2}>2 (Direct links)</option>
@@ -174,7 +182,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
         </div>
 
         <div>
-          <label htmlFor="concurrency-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+          <label htmlFor="concurrency-select" className="block text-xs font-semibold text-ink-strong mb-1.5">
             Concurrency
           </label>
           <select
@@ -182,12 +190,12 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
             value={concurrency}
             onChange={(e) => setConcurrency(Number(e.target.value))}
             disabled={isLoading}
-            className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus-ring"
+            className="w-full px-3 py-2.5 text-sm rounded-xl bg-surface-raised border border-line text-ink-strong focus-ring emboss cursor-pointer"
           >
-            <option value={2}>2 workers (Gentle)</option>
-            <option value={4}>4 workers (Standard)</option>
-            <option value={8}>8 workers (Fast)</option>
-            <option value={16}>16 workers (Turbo)</option>
+            <option value={2}>2 workers</option>
+            <option value={4}>4 workers</option>
+            <option value={8}>8 workers</option>
+            <option value={16}>16 workers</option>
           </select>
         </div>
 
@@ -195,7 +203,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
           <button
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full px-3 py-2 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center space-x-1.5 focus-ring transition"
+            className="w-full px-3 py-2.5 text-xs font-medium rounded-xl glass emboss text-ink hover:text-ink-strong flex items-center justify-center space-x-1.5 focus-ring transition-all duration-200 hover:shadow-glow-sm active:shadow-pressed active:scale-[0.98]"
           >
             <Settings2 className="w-3.5 h-3.5" />
             <span>{showAdvanced ? 'Hide Scope' : 'Scope Controls'}</span>
@@ -205,10 +213,10 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
 
       {/* Advanced Scope Controls */}
       {showAdvanced && (
-        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-3.5 animate-in">
+        <div className="p-5 rounded-2xl bg-surface-sunken border border-line space-y-4 animate-slide-up">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="include-pattern" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="include-pattern" className="block text-xs font-semibold text-ink-strong mb-1.5">
                 Include URL Regex Pattern
               </label>
               <input
@@ -217,11 +225,11 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
                 value={includePattern}
                 onChange={(e) => setIncludePattern(e.target.value)}
                 placeholder="e.g. /product/.*"
-                className="w-full px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus-ring font-mono"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-surface-raised border border-line text-ink-strong placeholder:text-ink-muted focus-ring font-mono emboss"
               />
             </div>
             <div>
-              <label htmlFor="exclude-pattern" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="exclude-pattern" className="block text-xs font-semibold text-ink-strong mb-1.5">
                 Exclude URL Regex Pattern
               </label>
               <input
@@ -230,7 +238,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
                 value={excludePattern}
                 onChange={(e) => setExcludePattern(e.target.value)}
                 placeholder="e.g. /logout|/admin"
-                className="w-full px-3 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus-ring font-mono"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-surface-raised border border-line text-ink-strong placeholder:text-ink-muted focus-ring font-mono emboss"
               />
             </div>
           </div>
@@ -241,9 +249,9 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
                 type="checkbox"
                 checked={sameDomainOnly}
                 onChange={(e) => setSameDomainOnly(e.target.checked)}
-                className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                className="rounded border-line text-brand focus:ring-brand accent-brand"
               />
-              <span className="text-slate-700 dark:text-slate-300">Stay within domain</span>
+              <span className="text-ink">Stay within domain</span>
             </label>
 
             <label className="flex items-center space-x-2 cursor-pointer">
@@ -251,9 +259,9 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
                 type="checkbox"
                 checked={urlNormalization}
                 onChange={(e) => setUrlNormalization(e.target.checked)}
-                className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                className="rounded border-line text-brand focus:ring-brand accent-brand"
               />
-              <span className="text-slate-700 dark:text-slate-300">URL Normalization & Dedup</span>
+              <span className="text-ink">URL Normalization & Dedup</span>
             </label>
 
             <label className="flex items-center space-x-2 cursor-pointer">
@@ -261,38 +269,45 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
                 type="checkbox"
                 checked={ignoreRobotsTxt}
                 onChange={(e) => setIgnoreRobotsTxt(e.target.checked)}
-                className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                className="rounded border-line text-status-warning focus:ring-status-warning accent-amber-500"
               />
-              <span className="text-slate-700 dark:text-slate-300 flex items-center space-x-1">
+              <span className="text-ink flex items-center space-x-1">
                 <span>Override robots.txt</span>
                 {ignoreRobotsTxt ? (
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+                  <ShieldAlert className="w-3.5 h-3.5 text-status-warning" />
                 ) : (
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-status-success" />
                 )}
               </span>
             </label>
           </div>
 
           {ignoreRobotsTxt && (
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+            <p className="text-[11px] text-status-warning bg-status-warning-bg p-3 rounded-xl border border-status-warning-line">
               Caution: Overriding robots.txt disables respectful crawl politeness. Only use this on domains you own or have explicit authorization to crawl.
             </p>
           )}
         </div>
       )}
 
-      {/* Full-width thumb-reachable launch button */}
-      <Button
+      {/* CTA Launch Button */}
+      <button
         type="submit"
-        size="lg"
-        isLoading={isLoading}
         disabled={!isUrlValid || isLoading}
-        className="w-full text-base font-semibold shadow-lg shadow-sky-500/20"
+        className="w-full py-4 text-sm font-bold rounded-2xl text-white gradient-accent shadow-soft hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] active:shadow-pressed transition-all duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-soft flex items-center justify-center space-x-2"
       >
-        <Play className="w-4 h-4 fill-current mr-1" />
-        <span>Start Mission Control Crawl</span>
-      </Button>
+        {isLoading ? (
+          <>
+            <span className="animate-spin inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full" />
+            <span>Initiating Crawl...</span>
+          </>
+        ) : (
+          <>
+            <Play className="w-4 h-4 fill-current" />
+            <span>Start Crawl</span>
+          </>
+        )}
+      </button>
     </form>
   );
 }

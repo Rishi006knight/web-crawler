@@ -1,38 +1,42 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
-  Command,
   Moon,
   Sun,
-  Palette,
   AlertTriangle,
   History,
   XCircle,
   GitCompare,
-  RotateCcw
+  Sparkles,
+  Zap,
+  Globe,
+  Sliders,
+  ChevronRight,
+  Clock,
+  ArrowUpRight
 } from 'lucide-react';
 import { PageData, CrawlRequest } from './types';
 import { BrandIcon } from './components/BrandIcon';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ThemeProvider, useTheme } from './features/theme/ThemeProvider';
+import { ToastProvider, useToast } from './ui/Toast';
 import { useCrawl } from './features/crawl/useCrawl';
 import { useCrawlHistory } from './features/crawl/useCrawlHistory';
 import { CrawlForm } from './features/crawl/CrawlForm';
-import { CrawlProgress } from './features/crawl/CrawlProgress';
+import { SidebarControls } from './features/crawl/SidebarControls';
+import { NetworkGraph } from './features/crawl/NetworkGraph';
+import { ResultsDashboard } from './features/crawl/ResultsDashboard';
 import { LiveFeed } from './features/crawl/LiveFeed';
-import { ResultsTable } from './features/crawl/ResultsTable';
-import { ResultsCards } from './features/crawl/ResultsCards';
 import { SkippedList } from './features/crawl/SkippedList';
 import { InspectorModal } from './features/crawl/InspectorModal';
-import { ExportMenu } from './features/crawl/ExportMenu';
 import { CrawlDiffModal } from './features/crawl/CrawlDiffModal';
 import { CommandPalette } from './features/command/CommandPalette';
-import { DesignPage } from './features/design/DesignPage';
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut';
 import { useDebounced } from './hooks/useDebounced';
 
 function MainApp() {
   const { theme, setTheme } = useTheme();
+  const { toast } = useToast();
   const {
     job,
     isLoading,
@@ -47,7 +51,7 @@ function MainApp() {
     clearError
   } = useCrawl();
 
-  const { history, saveCrawl, removeHistoryItem, clearHistory } = useCrawlHistory();
+  const { history, saveCrawl, clearHistory } = useCrawlHistory();
 
   // Local UI State
   const [searchFilter, setSearchFilter] = useState('');
@@ -56,7 +60,6 @@ function MainApp() {
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [showDesignPage, setShowDesignPage] = useState(false);
 
   // Crawl Diff State
   const [diffBaseJobId, setDiffBaseJobId] = useState<string | null>(null);
@@ -67,10 +70,15 @@ function MainApp() {
     loadLatest();
   }, []);
 
-  // Save completed crawl to history
+  // Save completed crawl to history and trigger toast
   useEffect(() => {
     if (job && (job.status === 'COMPLETED' || job.status === 'STOPPED' || (job.status === 'FAILED' && job.pages?.length > 0))) {
       saveCrawl(job);
+      if (job.status === 'COMPLETED') {
+        toast(`Crawl finished successfully. Crawled ${job.pages?.length || 0} pages.`, 'success', 'Crawl Completed');
+      } else if (job.status === 'FAILED') {
+        toast(job.errorMessage || 'Crawl stopped due to errors.', 'error', 'Crawl Failed');
+      }
     }
   }, [job?.status, job?.pagesCrawled]);
 
@@ -80,6 +88,7 @@ function MainApp() {
   const handleStartCrawl = (request: CrawlRequest) => {
     setSelectedUrls(new Set());
     startCrawl(request);
+    toast(`Started crawling ${request.url}`, 'info', 'Crawl Dispatched');
   };
 
   // Filtered pages with safety null guards
@@ -127,23 +136,22 @@ function MainApp() {
   const hasNext = currentIndex >= 0 && job?.pages ? currentIndex < job.pages.length - 1 : false;
   const hasPrev = currentIndex > 0;
 
-  if (showDesignPage) {
-    return <DesignPage onBack={() => setShowDesignPage(false)} />;
-  }
-
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      {/* App Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+    <div className="min-h-screen flex flex-col bg-canvas text-ink transition-colors">
+      {/* Animated subtle gradient wash in background */}
+      <div className="fixed inset-0 pointer-events-none z-0 gradient-bg opacity-60" />
+
+      {/* ═══ App Header ═══ */}
+      <header className="sticky top-0 z-40 glass-strong border-b border-border/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <BrandIcon className="w-8 h-8 text-sky-500 flex-shrink-0" />
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <BrandIcon className="w-9 h-9 shrink-0 shadow-sm" />
             <div>
-              <span className="font-bold text-base tracking-tight text-slate-900 dark:text-slate-100">
+              <span className="font-bold text-base tracking-tight text-ink-strong">
                 Web Crawler
               </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-full bg-sky-500/10 text-sky-500 font-semibold border border-sky-500/20">
-                Mission Control 2.0
+              <span className="hidden sm:inline-block ml-2 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full gradient-accent text-white shadow-glow-sm">
+                Pro
               </span>
             </div>
           </div>
@@ -152,12 +160,12 @@ function MainApp() {
             <button
               type="button"
               onClick={() => setIsCommandPaletteOpen(true)}
-              className="hidden md:inline-flex items-center space-x-2 px-3 py-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 focus-ring transition"
+              className="hidden md:inline-flex items-center space-x-2 px-3.5 py-2 text-xs rounded-2xl glass emboss text-ink-secondary hover:text-ink-strong focus-ring transition-all duration-200 hover:shadow-glow-sm"
               aria-label="Open command palette (Ctrl+K)"
             >
-              <Search className="w-3.5 h-3.5" />
+              <Search className="w-3.5 h-3.5 text-ink-muted" />
               <span>Search or command...</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono text-slate-400">
+              <kbd className="px-1.5 py-0.5 rounded-lg bg-surface-sunken text-[10px] font-mono text-ink-muted">
                 ⌘K
               </kbd>
             </button>
@@ -165,229 +173,205 @@ function MainApp() {
             <button
               type="button"
               onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-ring transition relative"
+              className="p-2.5 rounded-2xl text-ink-secondary hover:text-ink emboss hover:shadow-glow-sm focus-ring transition-all duration-200 relative"
               aria-label="Crawl History"
               title="Crawl History"
             >
               <History className="w-4 h-4" />
               {history.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-sky-500" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full gradient-accent animate-pulse" />
               )}
             </button>
 
             <button
               type="button"
-              onClick={() => setShowDesignPage(true)}
-              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-ring transition"
-              aria-label="Design System Showcase"
-              title="Design System Showcase"
-            >
-              <Palette className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-ring transition"
+              className="p-2.5 rounded-2xl text-ink-secondary hover:text-ink emboss hover:shadow-glow-sm focus-ring transition-all duration-200"
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-status-warning" /> : <Moon className="w-4 h-4 text-brand" />}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      {/* ═══ Main Content Workspace ═══ */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 relative z-10">
         {/* Cold Start Banner */}
         {isWakingUp && (
-          <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-600 dark:text-sky-400 flex items-center space-x-2 animate-in">
-            <span className="animate-spin inline-block w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full flex-shrink-0" />
+          <div className="p-4 rounded-2xl glass-panel text-xs text-status-info flex items-center space-x-3 animate-slide-up">
+            <span className="animate-spin inline-block w-4 h-4 border-2 border-status-info border-t-transparent rounded-full shrink-0" />
             <span>Waking the crawler backend from free-tier sleep. This may take a few moments...</span>
           </div>
         )}
 
         {/* Global Error Banner */}
         {error && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 flex items-center justify-between animate-in">
+          <div className="p-4 rounded-2xl bg-status-danger-bg border border-status-danger-line text-xs text-status-danger flex items-center justify-between animate-fade">
             <div className="flex items-center space-x-2.5">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <AlertTriangle className="w-5 h-5 shrink-0" />
               <span>{error}</span>
             </div>
             <button
               type="button"
               onClick={clearError}
               aria-label="Dismiss error"
-              className="p-1 rounded text-red-500 hover:text-red-700"
+              className="p-1.5 rounded-xl text-status-danger hover:opacity-80 focus-ring"
             >
               <XCircle className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Crawl Launcher Form */}
-        <CrawlForm
-          onSubmit={handleStartCrawl}
-          isLoading={isLoading}
-          defaultValues={job ? { url: job.startUrl, maxPages: job.maxPages, maxDepth: job.maxDepth } : undefined}
-        />
+        {/* ═══ Split Screen Layout When Job Exists ═══ */}
+        {job ? (
+          <div className="space-y-6">
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              {/* LEFT SIDEBAR: Sticky Controls & Settings */}
+              <SidebarControls
+                currentJob={job}
+                onStartCrawl={handleStartCrawl}
+                onStopCrawl={stopCrawl}
+                isLoading={isLoading}
+              />
 
-        {/* Crawl Progress & Stat Counters */}
-        {job && (
-          <CrawlProgress
-            job={job}
-            elapsedSeconds={elapsedSeconds}
-            onStop={stopCrawl}
-            isLoading={isLoading}
-          />
-        )}
+              {/* CENTER / MAIN: Live Network Graph Visualization & Ticker */}
+              <div className="flex-1 w-full space-y-5 min-w-0">
+                <NetworkGraph
+                  job={job}
+                  onSelectPage={setSelectedPage}
+                  isRunning={job.status === 'RUNNING'}
+                />
 
-        {/* Real-time Event Streaming Ticker */}
-        {job && <LiveFeed items={feedItems} isRunning={job.status === 'RUNNING'} />}
+                {/* Real-time Event Streaming Ticker */}
+                <LiveFeed items={feedItems} isRunning={job.status === 'RUNNING'} />
 
-        {/* Skipped & Blocked URLs Panel */}
-        {job?.skipped && job.skipped.length > 0 && (
-          <SkippedList
-            skipped={job.skipped}
-            totalAttempted={(job.pages?.length || 0) + job.skipped.length}
-          />
-        )}
-
-        {/* Results Workspace Area */}
-        {job && (
-          <ErrorBoundary fallbackTitle="Results Rendering Error">
-            <div className="space-y-4">
-              {/* Results Controls Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center space-x-2 w-full sm:w-auto flex-1 max-w-sm">
-                  <div className="relative w-full">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      value={searchFilter}
-                      onChange={(e) => setSearchFilter(e.target.value)}
-                      placeholder="Filter by title, URL or text..."
-                      className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus-ring"
-                    />
-                    {searchFilter && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchFilter('')}
-                        aria-label="Clear filter"
-                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <ExportMenu
-                    job={job}
-                    pagesToExport={pagesToExport}
-                    selectedCount={selectedUrls.size}
+                {/* Skipped / Blocked URLs */}
+                {job.skipped && job.skipped.length > 0 && (
+                  <SkippedList
+                    skipped={job.skipped}
+                    totalAttempted={(job.pages?.length || 0) + job.skipped.length}
                   />
+                )}
+              </div>
+            </div>
+
+            {/* ═══ RESULTS DASHBOARD: 5 Rich Tabs ═══ */}
+            <ErrorBoundary fallbackTitle="Results Dashboard Error">
+              <ResultsDashboard
+                job={job}
+                filteredPages={filteredPages}
+                pagesToExport={pagesToExport}
+                selectedUrls={selectedUrls}
+                searchFilter={searchFilter}
+                onSearchChange={setSearchFilter}
+                onSelectPage={setSelectedPage}
+                onToggleSelectPage={toggleSelectPage}
+                onToggleSelectAll={toggleSelectAll}
+              />
+            </ErrorBoundary>
+          </div>
+        ) : (
+          /* ═══ Hero Landing State (When No Job Yet) ═══ */
+          <div className="space-y-8 max-w-4xl mx-auto py-6">
+            <CrawlForm
+              onSubmit={handleStartCrawl}
+              isLoading={isLoading}
+            />
+
+            {/* 3 Premium Feature Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 animate-slide-up">
+              <div className="glass-panel rounded-3xl p-6 space-y-3 hover:shadow-floating hover:-translate-y-1 transition-all duration-300 border border-white/50 text-left">
+                <div className="w-10 h-10 rounded-2xl gradient-accent flex items-center justify-center shadow-glow-sm">
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
+                <h3 className="text-sm font-bold text-ink-strong">BFS Crawling</h3>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Breadth-first discovery with configurable depth, high concurrency, and URL pattern filters.
+                </p>
               </div>
 
-              {/* Empty / Error States */}
-              {job.pages && job.pages.length === 0 && (
-                <div className="p-12 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 space-y-3">
-                  <BrandIcon className="w-12 h-12 text-slate-400 mx-auto opacity-40" />
-                  {job.status === 'RUNNING' ? (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        Crawl in progress...
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Pages will stream into view here as discovered.
-                      </p>
-                    </div>
-                  ) : job.status === 'FAILED' ? (
-                    <div>
-                      <h4 className="text-sm font-semibold text-red-500">
-                        Crawl Completed with No Valid Pages
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                        {job.errorMessage || 'Target blocked crawler or returned non-HTML responses.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        No pages discovered
-                      </h4>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Verify target URL and scope settings.
-                      </p>
-                    </div>
-                  )}
+              <div className="glass-panel rounded-3xl p-6 space-y-3 hover:shadow-floating hover:-translate-y-1 transition-all duration-300 border border-white/50 text-left">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-sm">
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
-              )}
+                <h3 className="text-sm font-bold text-ink-strong">SSRF Protected</h3>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Enterprise-grade SSRF shield blocks internal IPs, metadata endpoints, and cloud service attacks.
+                </p>
+              </div>
 
-              {/* Filter Mismatch State */}
-              {job.pages && job.pages.length > 0 && filteredPages.length === 0 && (
-                <div className="p-8 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 space-y-2">
-                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                    No pages match filter &ldquo;{debouncedFilter}&rdquo;
-                  </p>
+              <div className="glass-panel rounded-3xl p-6 space-y-3 hover:shadow-floating hover:-translate-y-1 transition-all duration-300 border border-white/50 text-left">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-600 flex items-center justify-center shadow-sm">
+                  <Globe className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-sm font-bold text-ink-strong">Robots.txt Compliant</h3>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Respects website crawl policies by default with optional override for authorized testing.
+                </p>
+              </div>
+            </div>
+
+            {/* Recent Crawls Section */}
+            {history.length > 0 && (
+              <div className="rounded-3xl glass-panel p-6 border border-white/50 space-y-4 text-left animate-slide-up">
+                <div className="flex items-center justify-between pb-2 border-b border-line/40">
+                  <div className="flex items-center space-x-2">
+                    <History className="w-4 h-4 text-cyan-500" />
+                    <h3 className="text-sm font-bold text-ink-strong">Recent Crawls</h3>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setSearchFilter('')}
-                    className="text-xs text-sky-500 hover:underline font-medium"
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="text-xs gradient-accent-text hover:underline font-semibold"
                   >
-                    Clear Search Filter
+                    View All ({history.length})
                   </button>
                 </div>
-              )}
 
-              {/* Desktop Table View */}
-              {filteredPages.length > 0 && (
-                <div className="hidden sm:block">
-                  <ResultsTable
-                    pages={filteredPages}
-                    onSelectPage={setSelectedPage}
-                    selectedPages={selectedUrls}
-                    onToggleSelectPage={toggleSelectPage}
-                    onToggleSelectAll={toggleSelectAll}
-                    searchQuery={debouncedFilter}
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {history.slice(0, 3).map((item) => (
+                    <div
+                      key={item.jobId}
+                      onClick={() => loadJob(item.jobId)}
+                      className="p-4 rounded-2xl glass emboss hover:bg-surface-raised cursor-pointer transition-all duration-200 group space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-semibold text-ink-strong truncate max-w-[160px]">
+                          {item.startUrl}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-cyan-500 transition-colors" />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-ink-muted">
+                        <span>{item.pagesCrawled} pages</span>
+                        <span>{new Date(item.timestamp).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {/* Mobile Card View (<640px) */}
-              {filteredPages.length > 0 && (
-                <ResultsCards
-                  pages={filteredPages}
-                  onSelectPage={setSelectedPage}
-                  selectedPages={selectedUrls}
-                  onToggleSelectPage={toggleSelectPage}
-                  searchQuery={debouncedFilter}
-                />
-              )}
-            </div>
-          </ErrorBoundary>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
-      {/* History Slide-over Drawer */}
+      {/* ═══ History Slide-over Drawer ═══ */}
       {isHistoryOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Crawl History Drawer"
-          className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm animate-in"
+          className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm animate-fade"
           onClick={() => setIsHistoryOpen(false)}
         >
           <div
-            className="w-full max-w-sm bg-white dark:bg-slate-900 h-full p-5 space-y-4 shadow-2xl flex flex-col text-left"
+            className="w-full max-w-sm bg-surface-raised h-full p-5 space-y-4 shadow-floating flex flex-col text-left animate-slide-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <div className="flex items-center space-x-2">
-                <History className="w-4 h-4 text-sky-500" />
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                <History className="w-4 h-4 text-brand" />
+                <h3 className="text-sm font-bold text-ink-strong">
                   Crawl History ({history.length})
                 </h3>
               </div>
@@ -395,7 +379,7 @@ function MainApp() {
                 type="button"
                 onClick={() => setIsHistoryOpen(false)}
                 aria-label="Close history"
-                className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="p-1.5 rounded-xl text-ink-muted hover:text-ink focus-ring"
               >
                 <XCircle className="w-5 h-5" />
               </button>
@@ -403,25 +387,25 @@ function MainApp() {
 
             <div className="flex-1 overflow-y-auto space-y-2.5">
               {history.length === 0 ? (
-                <div className="text-center py-12 text-xs text-slate-400">
+                <div className="text-center py-12 text-xs text-ink-muted">
                   No previous crawl sessions found.
                 </div>
               ) : (
                 history.map((item) => (
                   <div
                     key={item.jobId}
-                    className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-2 text-xs"
+                    className="p-4 rounded-2xl glass-panel space-y-2.5 text-xs stagger-item animate-slide-up"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                      <span className="font-mono text-[11px] font-semibold text-ink-strong truncate max-w-[180px]">
                         {item.startUrl}
                       </span>
-                      <span className="px-1.5 py-0.2 rounded text-[10px] uppercase font-mono font-bold bg-sky-500/10 text-sky-500">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-mono font-bold gradient-accent text-white">
                         {item.status}
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                    <div className="text-[11px] text-ink-muted flex items-center justify-between">
                       <span>{item.pagesCrawled} pages</span>
                       <span>{new Date(item.timestamp).toLocaleDateString()}</span>
                     </div>
@@ -433,7 +417,7 @@ function MainApp() {
                           loadJob(item.jobId);
                           setIsHistoryOpen(false);
                         }}
-                        className="px-2 py-1 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 text-[11px] font-medium"
+                        className="px-3 py-1.5 rounded-xl gradient-accent text-white text-[11px] font-medium hover:opacity-90 focus-ring transition"
                       >
                         Re-open
                       </button>
@@ -444,7 +428,7 @@ function MainApp() {
                           setIsDiffOpen(true);
                           setIsHistoryOpen(false);
                         }}
-                        className="px-2 py-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 text-[11px] font-medium flex items-center space-x-1"
+                        className="px-3 py-1.5 rounded-xl glass emboss text-ink hover:text-ink-strong text-[11px] font-medium flex items-center space-x-1 focus-ring transition"
                       >
                         <GitCompare className="w-3 h-3" />
                         <span>Diff</span>
@@ -459,7 +443,7 @@ function MainApp() {
               <button
                 type="button"
                 onClick={clearHistory}
-                className="w-full py-2 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition"
+                className="w-full py-2.5 text-xs font-medium text-status-danger hover:bg-status-danger-bg rounded-2xl border border-transparent hover:border-status-danger-line transition focus-ring"
               >
                 Clear All History
               </button>
@@ -468,7 +452,7 @@ function MainApp() {
         </div>
       )}
 
-      {/* Inspector Modal / Sheet */}
+      {/* ═══ Inspector Modal ═══ */}
       <ErrorBoundary fallbackTitle="Inspector Rendering Error">
         <InspectorModal
           page={selectedPage}
@@ -512,7 +496,9 @@ export function App() {
   return (
     <ErrorBoundary isRoot>
       <ThemeProvider>
-        <MainApp />
+        <ToastProvider>
+          <MainApp />
+        </ToastProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -43,8 +43,8 @@ export function CommandPalette({
   const filteredPages = query.trim()
     ? pages.filter(
         (p) =>
-          p.title.toLowerCase().includes(query.toLowerCase()) ||
-          p.url.toLowerCase().includes(query.toLowerCase())
+          (p.title && p.title.toLowerCase().includes(query.toLowerCase())) ||
+          (p.url && p.url.toLowerCase().includes(query.toLowerCase()))
       ).slice(0, 5)
     : [];
 
@@ -58,40 +58,40 @@ export function CommandPalette({
       role="dialog"
       aria-modal="true"
       aria-label="Command Palette"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-slate-950/70 backdrop-blur-sm animate-in"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/40 backdrop-blur-md animate-fade"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden focus-ring"
+        className="w-full max-w-xl bg-surface-raised border border-line rounded-3xl shadow-floating overflow-hidden animate-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input */}
-        <div className="flex items-center px-4 py-3.5 border-b border-slate-200 dark:border-slate-800">
-          <Search className="w-5 h-5 text-slate-400 mr-3 flex-shrink-0" />
+        <div className="flex items-center px-5 py-4 border-b border-line">
+          <Search className="w-5 h-5 text-ink-muted mr-3 shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command or search pages... (Esc to exit)"
-            className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none"
+            className="w-full bg-transparent text-sm text-ink-strong placeholder:text-ink-muted outline-none"
           />
           <button
             type="button"
             onClick={onClose}
             aria-label="Close command palette"
-            className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="p-1.5 rounded-xl text-ink-muted hover:text-ink focus-ring transition"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Action List */}
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1 text-xs">
+        <div className="max-h-80 overflow-y-auto p-2.5 space-y-1 text-xs text-left">
           {/* Page Matches */}
           {filteredPages.length > 0 && (
             <div className="mb-2">
-              <div className="px-3 py-1 font-semibold text-[10px] uppercase tracking-wider text-slate-400">
+              <div className="px-3 py-1.5 font-semibold text-[10px] uppercase tracking-wider text-ink-muted">
                 Matching Pages
               </div>
               {filteredPages.map((page) => (
@@ -99,12 +99,12 @@ export function CommandPalette({
                   key={page.url}
                   type="button"
                   onClick={() => handleAction(() => onSelectPage(page))}
-                  className="w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-2.5 hover:bg-surface-sunken transition-all focus-ring"
                 >
-                  <Globe className="w-4 h-4 text-sky-500 flex-shrink-0" />
+                  <Globe className="w-4 h-4 text-gradient-start shrink-0" />
                   <div className="truncate flex-1">
-                    <span className="font-medium text-slate-800 dark:text-slate-200">{page.title}</span>
-                    <span className="ml-2 text-slate-400 text-[11px] truncate font-mono">{page.url}</span>
+                    <span className="font-medium text-ink-strong">{page.title || 'Untitled'}</span>
+                    <span className="ml-2 text-ink-muted text-[11px] truncate font-mono">{page.url}</span>
                   </div>
                 </button>
               ))}
@@ -112,60 +112,27 @@ export function CommandPalette({
           )}
 
           {/* Quick Commands */}
-          <div className="px-3 py-1 font-semibold text-[10px] uppercase tracking-wider text-slate-400">
+          <div className="px-3 py-1.5 font-semibold text-[10px] uppercase tracking-wider text-ink-muted">
             Commands
           </div>
 
-          <button
-            type="button"
-            onClick={() => handleAction(onStartCrawlPrompt)}
-            className="w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-800 dark:text-slate-200"
-          >
-            <Play className="w-4 h-4 text-emerald-500" />
-            <span>Start New Crawl...</span>
-          </button>
-
-          {isRunning && onStopCrawl && (
+          {[
+            { action: onStartCrawlPrompt, icon: Play, color: 'text-status-success', label: 'Start New Crawl...' },
+            ...(isRunning && onStopCrawl ? [{ action: onStopCrawl, icon: StopCircle, color: 'text-status-danger', label: 'Stop Active Crawl' }] : []),
+            { action: onExport, icon: Download, color: 'text-gradient-start', label: 'Export Crawl Results (JSON / CSV / MD)' },
+            { action: onOpenHistory, icon: History, color: 'text-gradient-end', label: 'Open Crawl History & Diff...' },
+            { action: () => setTheme(theme === 'dark' ? 'light' : 'dark'), icon: theme === 'dark' ? Sun : Moon, color: theme === 'dark' ? 'text-status-warning' : 'text-brand', label: `Toggle Theme (${theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'})` },
+          ].map((cmd, i) => (
             <button
+              key={cmd.label}
               type="button"
-              onClick={() => handleAction(onStopCrawl)}
-              className="w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-red-600 dark:text-red-400"
+              onClick={() => handleAction(cmd.action)}
+              className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center space-x-2.5 hover:bg-surface-sunken transition-all text-ink hover:text-ink-strong focus-ring"
             >
-              <StopCircle className="w-4 h-4 text-red-500" />
-              <span>Stop Active Crawl</span>
+              <cmd.icon className={`w-4 h-4 ${cmd.color}`} />
+              <span>{cmd.label}</span>
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => handleAction(onExport)}
-            className="w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-800 dark:text-slate-200"
-          >
-            <Download className="w-4 h-4 text-sky-500" />
-            <span>Export Crawl Results (JSON / CSV / MD)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAction(onOpenHistory)}
-            className="w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-800 dark:text-slate-200"
-          >
-            <History className="w-4 h-4 text-indigo-500" />
-            <span>Open Crawl History & Diff...</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleAction(() => setTheme(theme === 'dark' ? 'light' : 'dark'))}
-            className="w-full text-left px-3 py-2 rounded-lg flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-800 dark:text-slate-200"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-500" />
-            ) : (
-              <Moon className="w-4 h-4 text-indigo-400" />
-            )}
-            <span>Toggle Theme ({theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'})</span>
-          </button>
+          ))}
         </div>
       </div>
     </div>

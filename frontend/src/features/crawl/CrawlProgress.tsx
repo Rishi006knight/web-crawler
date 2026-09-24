@@ -1,7 +1,6 @@
 import React from 'react';
-import { Clock, Globe, FileText, Compass, AlertCircle, StopCircle } from 'lucide-react';
+import { Clock, Globe, FileText, Compass, StopCircle, Activity } from 'lucide-react';
 import { CrawlJob } from '../../types';
-import { ProgressBar } from '../../components/ui/ProgressBar';
 
 interface CrawlProgressProps {
   job: CrawlJob;
@@ -15,6 +14,7 @@ export function CrawlProgress({ job, elapsedSeconds, onStop, isLoading }: CrawlP
   const maxPages = job.maxPages || 20;
   const skippedCount = job.skipped?.length || 0;
   const isRunning = job.status === 'RUNNING';
+  const progress = Math.min((pagesCrawled / maxPages) * 100, 100);
 
   const totalWords = job.pages?.reduce((acc, p) => acc + (p.wordCount || 0), 0) || 0;
 
@@ -24,26 +24,77 @@ export function CrawlProgress({ job, elapsedSeconds, onStop, isLoading }: CrawlP
     return `${mins}m ${s < 10 ? '0' : ''}${s}s`;
   };
 
-  const statusColors = {
-    RUNNING: 'bg-sky-500/10 text-sky-500 border-sky-500/30',
-    COMPLETED: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
-    STOPPED: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
-    FAILED: 'bg-red-500/10 text-red-500 border-red-500/30'
-  }[job.status] || 'bg-slate-500/10 text-slate-500 border-slate-500/30';
+  const statusConfig = {
+    RUNNING: { color: 'text-gradient-start', bg: 'gradient-accent', label: 'Crawling' },
+    COMPLETED: { color: 'text-status-success', bg: 'bg-status-success', label: 'Completed' },
+    STOPPED: { color: 'text-status-warning', bg: 'bg-status-warning', label: 'Stopped' },
+    FAILED: { color: 'text-status-danger', bg: 'bg-status-danger', label: 'Failed' }
+  }[job.status] || { color: 'text-ink-muted', bg: 'bg-surface-sunken', label: job.status };
+
+  // Circular progress ring
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm space-y-4">
-      {/* Top row: Status, Start URL, Stop action */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center space-x-2.5">
-          <span
-            className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-full border ${statusColors}`}
-          >
-            {job.status}
-          </span>
-          <span className="font-mono text-xs text-slate-600 dark:text-slate-300 font-medium truncate max-w-xs md:max-w-md">
-            {job.startUrl}
-          </span>
+    <div className="rounded-3xl glass-panel p-6 sm:p-8 space-y-6 text-left animate-slide-up">
+      {/* Top row: Progress Ring + Status + Stop */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center space-x-5">
+          {/* Circular Progress Ring */}
+          <div className="relative w-20 h-20 shrink-0">
+            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 88 88">
+              {/* Background track */}
+              <circle
+                cx="44"
+                cy="44"
+                r={radius}
+                fill="none"
+                stroke="var(--border)"
+                strokeWidth="5"
+              />
+              {/* Progress arc */}
+              <circle
+                cx="44"
+                cy="44"
+                r={radius}
+                fill="none"
+                stroke="url(#progressGradient)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-500 ease-out"
+              />
+              <defs>
+                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#00D9FF" />
+                  <stop offset="100%" stopColor="#A855F7" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-lg font-bold text-ink-strong font-mono animate-count-up">
+                {Math.round(progress)}%
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center space-x-2.5">
+              <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full text-white ${statusConfig.bg}`}>
+                {isRunning && <Activity className="w-3 h-3 inline mr-1 animate-pulse" />}
+                {statusConfig.label}
+              </span>
+            </div>
+            <p className="font-mono text-xs text-ink-strong font-medium truncate max-w-xs md:max-w-md">
+              {job.startUrl}
+            </p>
+            <p className="text-xs text-ink-muted">
+              {pagesCrawled} of {maxPages} pages fetched
+              {skippedCount > 0 && <span className="ml-2 text-status-warning">• {skippedCount} skipped</span>}
+            </p>
+          </div>
         </div>
 
         {isRunning && (
@@ -51,77 +102,47 @@ export function CrawlProgress({ job, elapsedSeconds, onStop, isLoading }: CrawlP
             type="button"
             onClick={onStop}
             disabled={isLoading}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-medium focus-ring transition"
+            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-status-danger-bg hover:bg-status-danger text-status-danger hover:text-white border border-status-danger-line text-xs font-semibold focus-ring transition-all duration-200 emboss hover:shadow-glow active:scale-[0.98]"
           >
-            <StopCircle className="w-3.5 h-3.5" />
-            <span>Stop Crawl</span>
+            <StopCircle className="w-4 h-4" />
+            <span>Stop</span>
           </button>
         )}
       </div>
 
-      {/* Segmented Progress Bar */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
-          <span>
-            {pagesCrawled} of {maxPages} pages fetched ({Math.round((pagesCrawled / maxPages) * 100)}%)
-          </span>
-          {skippedCount > 0 && <span>{skippedCount} skipped</span>}
+      {/* Progress Bar */}
+      <div className="space-y-2">
+        <div className="h-2.5 rounded-full bg-surface-sunken overflow-hidden">
+          <div
+            className="h-full rounded-full gradient-accent transition-all duration-500 ease-out relative"
+            style={{ width: `${progress}%` }}
+          >
+            {isRunning && (
+              <div className="absolute inset-0 animate-shimmer rounded-full" />
+            )}
+          </div>
         </div>
-
-        <ProgressBar
-          value={pagesCrawled}
-          max={maxPages}
-          segments={{
-            fetched: pagesCrawled,
-            skipped: skippedCount,
-            failed: job.status === 'FAILED' ? 1 : 0,
-            total: Math.max(pagesCrawled + skippedCount, maxPages)
-          }}
-        />
       </div>
 
-      {/* Animated Stat Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-800/50 space-y-1">
-          <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
-            <Globe className="w-3.5 h-3.5 text-sky-500" />
-            <span>Pages</span>
+      {/* Stat Counters Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { icon: Globe, label: 'Pages', value: pagesCrawled, sub: `/ ${maxPages}`, color: 'text-gradient-start' },
+          { icon: Compass, label: 'Discovered', value: job.discoveredUrlsCount || 0, color: 'text-status-success' },
+          { icon: FileText, label: 'Total Words', value: totalWords.toLocaleString(), color: 'text-gradient-end' },
+          { icon: Clock, label: 'Duration', value: job.durationMillis ? `${(job.durationMillis / 1000).toFixed(1)}s` : formatElapsed(elapsedSeconds), color: 'text-status-info' },
+        ].map((stat, i) => (
+          <div key={stat.label} className={`p-4 rounded-2xl glass emboss space-y-1.5 stagger-item animate-slide-up`} style={{ animationDelay: `${i * 60}ms` }}>
+            <div className="flex items-center space-x-1.5 text-ink-muted text-xs">
+              <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
+              <span className="uppercase tracking-wider text-[10px] font-medium">{stat.label}</span>
+            </div>
+            <div className="text-lg font-bold text-ink-strong font-mono animate-count-up">
+              {stat.value}
+              {stat.sub && <span className="text-xs text-ink-muted font-normal ml-0.5">{stat.sub}</span>}
+            </div>
           </div>
-          <div className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
-            {pagesCrawled}
-            <span className="text-xs text-slate-400 font-normal"> / {maxPages}</span>
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-800/50 space-y-1">
-          <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
-            <Compass className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Discovered</span>
-          </div>
-          <div className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
-            {job.discoveredUrlsCount || 0}
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-800/50 space-y-1">
-          <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
-            <FileText className="w-3.5 h-3.5 text-amber-500" />
-            <span>Total Words</span>
-          </div>
-          <div className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
-            {totalWords.toLocaleString()}
-          </div>
-        </div>
-
-        <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-800/50 space-y-1">
-          <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
-            <Clock className="w-3.5 h-3.5 text-purple-500" />
-            <span>Duration</span>
-          </div>
-          <div className="text-lg font-bold text-slate-800 dark:text-slate-100 font-mono">
-            {job.durationMillis ? `${(job.durationMillis / 1000).toFixed(1)}s` : formatElapsed(elapsedSeconds)}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
