@@ -1,634 +1,520 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { api } from './services/api';
-import { CrawlJob, PageData } from './types';
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  Search,
+  Command,
+  Moon,
+  Sun,
+  Palette,
+  AlertTriangle,
+  History,
+  XCircle,
+  GitCompare,
+  RotateCcw
+} from 'lucide-react';
+import { PageData, CrawlRequest } from './types';
+import { BrandIcon } from './components/BrandIcon';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeProvider, useTheme } from './features/theme/ThemeProvider';
+import { useCrawl } from './features/crawl/useCrawl';
+import { useCrawlHistory } from './features/crawl/useCrawlHistory';
+import { CrawlForm } from './features/crawl/CrawlForm';
+import { CrawlProgress } from './features/crawl/CrawlProgress';
+import { LiveFeed } from './features/crawl/LiveFeed';
+import { ResultsTable } from './features/crawl/ResultsTable';
+import { ResultsCards } from './features/crawl/ResultsCards';
+import { SkippedList } from './features/crawl/SkippedList';
+import { InspectorModal } from './features/crawl/InspectorModal';
+import { ExportMenu } from './features/crawl/ExportMenu';
+import { CrawlDiffModal } from './features/crawl/CrawlDiffModal';
+import { CommandPalette } from './features/command/CommandPalette';
+import { DesignPage } from './features/design/DesignPage';
+import { useKeyboardShortcut } from './hooks/useKeyboardShortcut';
+import { useDebounced } from './hooks/useDebounced';
 
-export function App() {
-  const [url, setUrl] = useState('https://example.com');
-  const [maxPages, setMaxPages] = useState<number>(20);
-  const [maxDepth, setMaxDepth] = useState<number>(2);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentJob, setCurrentJob] = useState<CrawlJob | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+function MainApp() {
+  const { theme, setTheme } = useTheme();
+  const {
+    job,
+    isLoading,
+    isWakingUp,
+    error,
+    feedItems,
+    elapsedSeconds,
+    startCrawl,
+    stopCrawl,
+    loadJob,
+    loadLatest,
+    clearError
+  } = useCrawl();
+
+  const { history, saveCrawl, removeHistoryItem, clearHistory } = useCrawlHistory();
+
+  // Local UI State
+  const [searchFilter, setSearchFilter] = useState('');
+  const debouncedFilter = useDebounced(searchFilter, 150);
   const [selectedPage, setSelectedPage] = useState<PageData | null>(null);
-  const [isStructuredView, setIsStructuredView] = useState(true);
+  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [showDesignPage, setShowDesignPage] = useState(false);
 
-  const pollIntervalRef = useRef<number | null>(null);
+  // Crawl Diff State
+  const [diffBaseJobId, setDiffBaseJobId] = useState<string | null>(null);
+  const [isDiffOpen, setIsDiffOpen] = useState(false);
 
-  // Poll job status if running
+  // Load latest crawl job on mount
   useEffect(() => {
-    if (currentJob && currentJob.status === 'RUNNING') {
-      pollIntervalRef.current = window.setInterval(async () => {
-        try {
-          const updated = await api.getJob(currentJob.jobId);
-          setCurrentJob(updated);
-          if (updated.status !== 'RUNNING') {
-            setLoading(false);
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-          }
-        } catch (err) {
-          console.error('Error polling job:', err);
-        }
-      }, 1000);
-    } else {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-      setLoading(false);
-    }
-
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
-  }, [currentJob?.jobId, currentJob?.status]);
-
-  // Try loading latest job on initial mount
-  useEffect(() => {
-    api.getLatestJob()
-      .then((job) => {
-        if (job) setCurrentJob(job);
-      })
-      .catch(() => {});
+    loadLatest();
   }, []);
 
-  const handleStartCrawl = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) {
-      setError('Please enter a website URL');
-      return;
+  // Save completed crawl to history
+  useEffect(() => {
+    if (job && (job.status === 'COMPLETED' || job.status === 'STOPPED' || (job.status === 'FAILED' && job.pages?.length > 0))) {
+      saveCrawl(job);
     }
+  }, [job?.status, job?.pagesCrawled]);
 
-    setError(null);
-    setLoading(true);
-    setSelectedPage(null);
+  // Global Ctrl+K / Cmd+K shortcut for command palette
+  useKeyboardShortcut('k', () => setIsCommandPaletteOpen(true), { ctrlOrCmd: true });
 
-    try {
-      const job = await api.startCrawl({
-        url: url.trim(),
-        maxPages: Number(maxPages) || 20,
-        maxDepth: Number(maxDepth) || 2,
-      });
-      setCurrentJob(job);
-    } catch (err: any) {
-      setError(err.message || 'Failed to start crawler');
-      setLoading(false);
-    }
+  const handleStartCrawl = (request: CrawlRequest) => {
+    setSelectedUrls(new Set());
+    startCrawl(request);
   };
 
-  const handleStopCrawl = async () => {
-    if (currentJob) {
-      try {
-        await api.stopCrawl(currentJob.jobId);
-        const updated = await api.getJob(currentJob.jobId);
-        setCurrentJob(updated);
-      } catch (err) {
-        console.error('Failed to stop crawl', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  // Filter pages by search query
-  const filteredPages = currentJob?.pages?.filter((page) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      page.title.toLowerCase().includes(q) ||
-      page.url.toLowerCase().includes(q) ||
-      (page.textContent && page.textContent.toLowerCase().includes(q))
+  // Filtered pages with safety null guards
+  const filteredPages = useMemo(() => {
+    if (!job?.pages) return [];
+    if (!debouncedFilter.trim()) return job.pages;
+    const q = debouncedFilter.toLowerCase();
+    return job.pages.filter(
+      (p) =>
+        (p.title && p.title.toLowerCase().includes(q)) ||
+        (p.url && p.url.toLowerCase().includes(q)) ||
+        (p.textContent && p.textContent.toLowerCase().includes(q))
     );
-  }) || [];
+  }, [job?.pages, debouncedFilter]);
 
-  const progressPercent = currentJob
-    ? Math.min(100, Math.round((currentJob.pagesCrawled / currentJob.maxPages) * 100))
-    : 0;
+  // Selected pages for bulk export
+  const pagesToExport = useMemo(() => {
+    if (!job?.pages) return [];
+    if (selectedUrls.size > 0) {
+      return job.pages.filter((p) => selectedUrls.has(p.url));
+    }
+    return filteredPages;
+  }, [job?.pages, selectedUrls, filteredPages]);
+
+  const toggleSelectPage = (url: string) => {
+    setSelectedUrls((prev) => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!job?.pages) return;
+    if (selectedUrls.size === job.pages.length) {
+      setSelectedUrls(new Set());
+    } else {
+      setSelectedUrls(new Set(job.pages.map((p) => p.url)));
+    }
+  };
+
+  // Next / Prev Page Navigation for Inspector
+  const currentIndex = selectedPage && job?.pages ? job.pages.findIndex((p) => p.url === selectedPage.url) : -1;
+  const hasNext = currentIndex >= 0 && job?.pages ? currentIndex < job.pages.length - 1 : false;
+  const hasPrev = currentIndex > 0;
+
+  if (showDesignPage) {
+    return <DesignPage onBack={() => setShowDesignPage(false)} />;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 shadow-lg shadow-cyan-500/10 flex items-center justify-center bg-black p-0.5">
-              <img src="/crawler-icon.svg" alt="Web Crawler Icon" className="w-full h-full object-contain" />
-            </div>
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      {/* App Header */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <BrandIcon className="w-8 h-8 text-sky-500 flex-shrink-0" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              <span className="font-bold text-base tracking-tight text-slate-900 dark:text-slate-100">
                 Web Crawler
-                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-medium">
-                  Structured Content
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400">Extracts headings, structured paragraphs, lists, links, and images</p>
+              </span>
+              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider rounded-full bg-sky-500/10 text-sky-500 font-semibold border border-sky-500/20">
+                Mission Control 2.0
+              </span>
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setIsCommandPaletteOpen(true)}
+              className="hidden md:inline-flex items-center space-x-2 px-3 py-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 focus-ring transition"
+              aria-label="Open command palette (Ctrl+K)"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Search or command...</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[10px] font-mono text-slate-400">
+                ⌘K
+              </kbd>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-ring transition relative"
+              aria-label="Crawl History"
+              title="Crawl History"
+            >
+              <History className="w-4 h-4" />
+              {history.length > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-sky-500" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowDesignPage(true)}
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-ring transition"
+              aria-label="Design System Showcase"
+              title="Design System Showcase"
+            >
+              <Palette className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-ring transition"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {/* URL Input Form Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
-          <form onSubmit={handleStartCrawl} className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-base">
-                  🌐
-                </span>
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm font-medium transition"
-                  disabled={loading}
-                />
+      {/* Main Content Workspace */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        {/* Cold Start Banner */}
+        {isWakingUp && (
+          <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-600 dark:text-sky-400 flex items-center space-x-2 animate-in">
+            <span className="animate-spin inline-block w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full flex-shrink-0" />
+            <span>Waking the crawler backend from free-tier sleep. This may take a few moments...</span>
+          </div>
+        )}
+
+        {/* Global Error Banner */}
+        {error && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 dark:text-red-400 flex items-center justify-between animate-in">
+            <div className="flex items-center space-x-2.5">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={clearError}
+              aria-label="Dismiss error"
+              className="p-1 rounded text-red-500 hover:text-red-700"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Crawl Launcher Form */}
+        <CrawlForm
+          onSubmit={handleStartCrawl}
+          isLoading={isLoading}
+          defaultValues={job ? { url: job.startUrl, maxPages: job.maxPages, maxDepth: job.maxDepth } : undefined}
+        />
+
+        {/* Crawl Progress & Stat Counters */}
+        {job && (
+          <CrawlProgress
+            job={job}
+            elapsedSeconds={elapsedSeconds}
+            onStop={stopCrawl}
+            isLoading={isLoading}
+          />
+        )}
+
+        {/* Real-time Event Streaming Ticker */}
+        {job && <LiveFeed items={feedItems} isRunning={job.status === 'RUNNING'} />}
+
+        {/* Skipped & Blocked URLs Panel */}
+        {job?.skipped && job.skipped.length > 0 && (
+          <SkippedList
+            skipped={job.skipped}
+            totalAttempted={(job.pages?.length || 0) + job.skipped.length}
+          />
+        )}
+
+        {/* Results Workspace Area */}
+        {job && (
+          <ErrorBoundary fallbackTitle="Results Rendering Error">
+            <div className="space-y-4">
+              {/* Results Controls Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center space-x-2 w-full sm:w-auto flex-1 max-w-sm">
+                  <div className="relative w-full">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      value={searchFilter}
+                      onChange={(e) => setSearchFilter(e.target.value)}
+                      placeholder="Filter by title, URL or text..."
+                      className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus-ring"
+                    />
+                    {searchFilter && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchFilter('')}
+                        aria-label="Clear filter"
+                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <ExportMenu
+                    job={job}
+                    pagesToExport={pagesToExport}
+                    selectedCount={selectedUrls.size}
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="w-28">
-                  <label className="block text-[11px] text-slate-400 font-medium mb-1">Max Pages</label>
-                  <select
-                    value={maxPages}
-                    onChange={(e) => setMaxPages(Number(e.target.value))}
-                    disabled={loading}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  >
-                    <option value={10}>10 pages</option>
-                    <option value={20}>20 pages</option>
-                    <option value={50}>50 pages</option>
-                    <option value={100}>100 pages</option>
-                  </select>
-                </div>
-
-                <div className="w-24">
-                  <label className="block text-[11px] text-slate-400 font-medium mb-1">Max Depth</label>
-                  <select
-                    value={maxDepth}
-                    onChange={(e) => setMaxDepth(Number(e.target.value))}
-                    disabled={loading}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  >
-                    <option value={1}>1 (shallow)</option>
-                    <option value={2}>2 (standard)</option>
-                    <option value={3}>3 (deep)</option>
-                  </select>
-                </div>
-
-                <div className="pt-5">
-                  {loading ? (
-                    <button
-                      type="button"
-                      onClick={handleStopCrawl}
-                      className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 shadow-lg shadow-red-600/20"
-                    >
-                      <span className="animate-spin text-xs">⏳</span> Stop
-                    </button>
+              {/* Empty / Error States */}
+              {job.pages && job.pages.length === 0 && (
+                <div className="p-12 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 space-y-3">
+                  <BrandIcon className="w-12 h-12 text-slate-400 mx-auto opacity-40" />
+                  {job.status === 'RUNNING' ? (
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        Crawl in progress...
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Pages will stream into view here as discovered.
+                      </p>
+                    </div>
+                  ) : job.status === 'FAILED' ? (
+                    <div>
+                      <h4 className="text-sm font-semibold text-red-500">
+                        Crawl Completed with No Valid Pages
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                        {job.errorMessage || 'Target blocked crawler or returned non-HTML responses.'}
+                      </p>
+                    </div>
                   ) : (
-                    <button
-                      type="submit"
-                      className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2 shadow-lg shadow-cyan-600/20"
-                    >
-                      <span>🚀</span> Start Crawl
-                    </button>
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        No pages discovered
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Verify target URL and scope settings.
+                      </p>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* Quick Suggestions */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-400">
-              <span className="text-slate-500 font-medium">Quick Presets:</span>
-              {['https://example.com', 'https://books.toscrape.com', 'https://news.ycombinator.com'].map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setUrl(preset)}
-                  disabled={loading}
-                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-[11px]"
-                >
-                  {preset.replace('https://', '')}
-                </button>
-              ))}
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-red-300 text-xs flex items-center gap-2">
-                <span>⚠️</span> {error}
-              </div>
-            )}
-          </form>
-        </div>
-
-        {/* Crawl Status & Metrics Bar */}
-        {currentJob && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
-                    currentJob.status === 'RUNNING'
-                      ? 'bg-cyan-950 text-cyan-400 border border-cyan-800'
-                      : currentJob.status === 'COMPLETED'
-                      ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                      : currentJob.status === 'STOPPED'
-                      ? 'bg-amber-950 text-amber-400 border border-amber-800'
-                      : 'bg-red-950 text-red-400 border border-red-800'
-                  }`}
-                >
-                  {currentJob.status === 'RUNNING' && (
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
-                  )}
-                  {currentJob.status}
-                </span>
-                <span className="text-slate-400 text-xs">
-                  Target: <span className="text-slate-200 font-medium">{currentJob.startUrl}</span>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs">
-                <div>
-                  <span className="text-slate-500">Pages Crawled:</span>{' '}
-                  <span className="text-cyan-400 font-bold">{currentJob.pagesCrawled}</span> / {currentJob.maxPages}
+              {/* Filter Mismatch State */}
+              {job.pages && job.pages.length > 0 && filteredPages.length === 0 && (
+                <div className="p-8 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 space-y-2">
+                  <p className="text-sm text-slate-700 dark:text-slate-300">
+                    No pages match filter &ldquo;{debouncedFilter}&rdquo;
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSearchFilter('')}
+                    className="text-xs text-sky-500 hover:underline font-medium"
+                  >
+                    Clear Search Filter
+                  </button>
                 </div>
-                <div>
-                  <span className="text-slate-500">Links Discovered:</span>{' '}
-                  <span className="text-purple-400 font-bold">{currentJob.discoveredUrlsCount}</span>
+              )}
+
+              {/* Desktop Table View */}
+              {filteredPages.length > 0 && (
+                <div className="hidden sm:block">
+                  <ResultsTable
+                    pages={filteredPages}
+                    onSelectPage={setSelectedPage}
+                    selectedPages={selectedUrls}
+                    onToggleSelectPage={toggleSelectPage}
+                    onToggleSelectAll={toggleSelectAll}
+                    searchQuery={debouncedFilter}
+                  />
                 </div>
-                <div>
-                  <span className="text-slate-500">Elapsed:</span>{' '}
-                  <span className="text-slate-300 font-medium">
-                    {((currentJob.durationMillis || (Date.now() - currentJob.startTime)) / 1000).toFixed(1)}s
-                  </span>
-                </div>
-              </div>
-            </div>
+              )}
 
-            {/* Progress Bar */}
-            <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-              <div
-                className={`h-full transition-all duration-300 ${
-                  currentJob.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-cyan-500'
-                }`}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Crawled Pages Results */}
-        {currentJob && (
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                Crawled Pages
-                <span className="text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
-                  {filteredPages.length} {filteredPages.length === 1 ? 'Page' : 'Pages'}
-                </span>
-              </h2>
-
-              <div className="relative w-full sm:w-72">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter by title, URL, or keywords..."
-                  className="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              {/* Mobile Card View (<640px) */}
+              {filteredPages.length > 0 && (
+                <ResultsCards
+                  pages={filteredPages}
+                  onSelectPage={setSelectedPage}
+                  selectedPages={selectedUrls}
+                  onToggleSelectPage={toggleSelectPage}
+                  searchQuery={debouncedFilter}
                 />
-                <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-500 text-xs">
-                  🔍
-                </span>
-              </div>
+              )}
             </div>
-
-            {filteredPages.length === 0 ? (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-2">
-                <div className="text-3xl">🕸️</div>
-                <div className="text-sm font-medium text-slate-300">No matching pages found</div>
-                <div className="text-xs text-slate-500">
-                  {currentJob.status === 'RUNNING'
-                    ? 'Pages will appear here as they are discovered and fetched...'
-                    : 'Try crawling a different website or clearing your search filter.'}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-950/60 border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
-                      <tr>
-                        <th className="py-3 px-4 w-12 text-center">#</th>
-                        <th className="py-3 px-4">Page Title & URL</th>
-                        <th className="py-3 px-3 text-center">Status</th>
-                        <th className="py-3 px-3 text-center">Words</th>
-                        <th className="py-3 px-3 text-center">Blocks</th>
-                        <th className="py-3 px-3 text-center">Links</th>
-                        <th className="py-3 px-3 text-center">Images</th>
-                        <th className="py-3 px-4 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {filteredPages.map((page, idx) => (
-                        <tr
-                          key={page.url + idx}
-                          className="hover:bg-slate-800/40 transition group cursor-pointer"
-                          onClick={() => setSelectedPage(page)}
-                        >
-                          <td className="py-3 px-4 text-center text-slate-500 font-mono text-[11px]">
-                            {idx + 1}
-                          </td>
-                          <td className="py-3 px-4 max-w-md">
-                            <div className="font-semibold text-slate-200 group-hover:text-cyan-400 transition truncate">
-                              {page.title || 'Untitled Page'}
-                            </div>
-                            <div className="text-[11px] text-slate-400 truncate flex items-center gap-1 font-mono">
-                              <a
-                                href={page.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="hover:underline text-cyan-500"
-                              >
-                                {page.url}
-                              </a>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium ${
-                                page.statusCode >= 200 && page.statusCode < 300
-                                  ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                                  : 'bg-amber-950 text-amber-400 border border-amber-800'
-                              }`}
-                            >
-                              {page.statusCode}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-center text-slate-300 font-mono">
-                            {page.wordCount.toLocaleString()}
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono text-[11px]">
-                              {page.structuredContent ? page.structuredContent.length : 0}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[11px]">
-                              {page.links.length}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono text-[11px]">
-                              {page.images.length}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPage(page);
-                              }}
-                              className="px-3 py-1 bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-300 rounded-lg text-xs font-medium transition"
-                            >
-                              Inspect
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Empty State when no job has been started */}
-        {!currentJob && (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-12 text-center space-y-3">
-            <div className="text-4xl">🚀</div>
-            <h3 className="text-base font-bold text-white">Ready to Crawl</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Enter any website URL above, pick your max pages limit, and click <strong>Start Crawl</strong>.
-              The crawler will extract structured headings, clean paragraphs, lists, links, and images.
-            </p>
-          </div>
+          </ErrorBoundary>
         )}
       </main>
 
-      {/* Page Data Inspector Modal */}
-      {selectedPage && (
+      {/* History Slide-over Drawer */}
+      {isHistoryOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setSelectedPage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Crawl History Drawer"
+          className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-sm animate-in"
+          onClick={() => setIsHistoryOpen(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-700 w-full max-w-3xl max-h-[88vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="w-full max-w-sm bg-white dark:bg-slate-900 h-full p-5 space-y-4 shadow-2xl flex flex-col text-left"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-950/80">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
-                      selectedPage.statusCode >= 200 && selectedPage.statusCode < 300
-                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                        : 'bg-amber-950 text-amber-400 border border-amber-800'
-                    }`}
-                  >
-                    HTTP {selectedPage.statusCode}
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">
-                    {selectedPage.wordCount} words
-                  </span>
-                  <span className="text-xs text-purple-400 font-mono">
-                    {selectedPage.structuredContent ? selectedPage.structuredContent.length : 0} structured blocks
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-white truncate">
-                  {selectedPage.title || 'Untitled Page'}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <History className="w-4 h-4 text-sky-500" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Crawl History ({history.length})
                 </h3>
-                <a
-                  href={selectedPage.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-cyan-400 hover:underline font-mono truncate block mt-0.5"
-                >
-                  {selectedPage.url}
-                </a>
-                {selectedPage.description && (
-                  <p className="mt-2 text-xs text-slate-300 italic bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
-                    “ {selectedPage.description} ”
-                  </p>
-                )}
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPage(null)}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm transition"
+                onClick={() => setIsHistoryOpen(false)}
+                aria-label="Close history"
+                className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
-                ✕
+                <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-              {/* Headings */}
-              {selectedPage.headings && selectedPage.headings.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                    <span>📌</span> Headings Hierarchy ({selectedPage.headings.length})
-                  </h4>
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5 max-h-36 overflow-y-auto">
-                    {selectedPage.headings.map((h, i) => (
-                      <div key={i} className="text-slate-300 font-mono text-[11px] leading-relaxed">
-                        {h}
-                      </div>
-                    ))}
-                  </div>
+            <div className="flex-1 overflow-y-auto space-y-2.5">
+              {history.length === 0 ? (
+                <div className="text-center py-12 text-xs text-slate-400">
+                  No previous crawl sessions found.
                 </div>
-              )}
+              ) : (
+                history.map((item) => (
+                  <div
+                    key={item.jobId}
+                    className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                        {item.startUrl}
+                      </span>
+                      <span className="px-1.5 py-0.2 rounded text-[10px] uppercase font-mono font-bold bg-sky-500/10 text-sky-500">
+                        {item.status}
+                      </span>
+                    </div>
 
-              {/* Structured Content Section */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                    <span>📝</span> Structured Content
-                  </h4>
-                  <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => setIsStructuredView(true)}
-                      className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
-                        isStructuredView
-                          ? 'bg-cyan-600 text-white'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Structured Blocks
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsStructuredView(false)}
-                      className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition ${
-                        !isStructuredView
-                          ? 'bg-cyan-600 text-white'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      Clean Text
-                    </button>
-                  </div>
-                </div>
+                    <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                      <span>{item.pagesCrawled} pages</span>
+                      <span>{new Date(item.timestamp).toLocaleDateString()}</span>
+                    </div>
 
-                {isStructuredView ? (
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5 max-h-72 overflow-y-auto">
-                    {selectedPage.structuredContent && selectedPage.structuredContent.length > 0 ? (
-                      selectedPage.structuredContent.map((block, idx) => {
-                        if (block.type === 'HEADING') {
-                          return (
-                            <div key={idx} className="pt-2 pb-1 border-b border-slate-800/80">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase mr-2">
-                                {block.tag}
-                              </span>
-                              <span className="font-bold text-slate-100 text-xs">{block.text}</span>
-                            </div>
-                          );
-                        } else if (block.type === 'LIST_ITEM') {
-                          return (
-                            <div key={idx} className="flex items-start gap-2 pl-2 text-slate-300 text-xs">
-                              <span className="text-cyan-400 font-bold">•</span>
-                              <span>{block.text}</span>
-                            </div>
-                          );
-                        } else if (block.type === 'QUOTE') {
-                          return (
-                            <blockquote key={idx} className="border-l-2 border-cyan-500 pl-3 py-1 italic text-slate-400 bg-slate-900/50 rounded-r text-xs">
-                              {block.text}
-                            </blockquote>
-                          );
-                        } else if (block.type === 'CODE') {
-                          return (
-                            <pre key={idx} className="bg-slate-900 p-2.5 rounded-lg font-mono text-[11px] text-emerald-400 overflow-x-auto border border-slate-800">
-                              {block.text}
-                            </pre>
-                          );
-                        } else {
-                          return (
-                            <p key={idx} className="text-slate-300 text-xs leading-relaxed bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60">
-                              {block.text}
-                            </p>
-                          );
-                        }
-                      })
-                    ) : (
-                      <div className="text-slate-500">No structured blocks detected.</div>
-                    )}
+                    <div className="flex items-center space-x-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          loadJob(item.jobId);
+                          setIsHistoryOpen(false);
+                        }}
+                        className="px-2 py-1 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500/20 text-[11px] font-medium"
+                      >
+                        Re-open
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDiffBaseJobId(item.jobId);
+                          setIsDiffOpen(true);
+                          setIsHistoryOpen(false);
+                        }}
+                        className="px-2 py-1 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 text-[11px] font-medium flex items-center space-x-1"
+                      >
+                        <GitCompare className="w-3 h-3" />
+                        <span>Diff</span>
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-slate-300 font-sans text-xs leading-relaxed max-h-72 overflow-y-auto whitespace-pre-line">
-                    {selectedPage.textContent || 'No text extracted.'}
-                  </div>
-                )}
-              </div>
-
-              {/* Discovered Outgoing Links */}
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                  <span>🔗</span> Outgoing Links ({selectedPage.links.length})
-                </h4>
-                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-36 overflow-y-auto divide-y divide-slate-900">
-                  {selectedPage.links.length === 0 ? (
-                    <div className="text-slate-500 text-[11px]">No outgoing links found on this page.</div>
-                  ) : (
-                    selectedPage.links.map((link, i) => (
-                      <div key={i} className="py-1 text-slate-400 font-mono text-[11px] truncate">
-                        <a href={link} target="_blank" rel="noreferrer" className="hover:text-cyan-400 hover:underline">
-                          {link}
-                        </a>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Discovered Images */}
-              {selectedPage.images && selectedPage.images.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                    <span>🖼️</span> Images ({selectedPage.images.length})
-                  </h4>
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 max-h-32 overflow-y-auto space-y-1">
-                    {selectedPage.images.map((img, i) => (
-                      <div key={i} className="text-slate-400 font-mono text-[11px] truncate">
-                        <a href={img} target="_blank" rel="noreferrer" className="hover:text-purple-400 hover:underline">
-                          {img}
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 bg-slate-950 border-t border-slate-800 flex justify-end">
+            {history.length > 0 && (
               <button
                 type="button"
-                onClick={() => setSelectedPage(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition"
+                onClick={clearHistory}
+                className="w-full py-2 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition"
               >
-                Close
+                Clear All History
               </button>
-            </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* Inspector Modal / Sheet */}
+      <ErrorBoundary fallbackTitle="Inspector Rendering Error">
+        <InspectorModal
+          page={selectedPage}
+          onClose={() => setSelectedPage(null)}
+          onNext={() => hasNext && job?.pages && setSelectedPage(job.pages[currentIndex + 1])}
+          onPrev={() => hasPrev && job?.pages && setSelectedPage(job.pages[currentIndex - 1])}
+          hasNext={hasNext}
+          hasPrev={hasPrev}
+        />
+      </ErrorBoundary>
+
+      {/* Crawl Comparison Diff Modal */}
+      {isDiffOpen && job && (
+        <CrawlDiffModal
+          isOpen={isDiffOpen}
+          onClose={() => setIsDiffOpen(false)}
+          basePages={job.pages || []}
+          targetPages={job.pages || []}
+          baseTitle="Current Crawl"
+          targetTitle="Selected Snapshot"
+        />
+      )}
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onStartCrawlPrompt={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onStopCrawl={stopCrawl}
+        isRunning={job?.status === 'RUNNING'}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onExport={() => {}}
+        pages={job?.pages || []}
+        onSelectPage={setSelectedPage}
+      />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ErrorBoundary isRoot>
+      <ThemeProvider>
+        <MainApp />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -32,7 +32,6 @@ secrets/
 # Old & Unnecessary Advanced Version Files
 # ------------------------------------------
 backend/src/src/
-frontend/src/components/
 
 # ------------------------------------------
 # Backend (Spring Boot & Maven)
@@ -116,6 +115,7 @@ bin/
 Thumbs.db
 desktop.ini
 *.bat
+powershell.cmd
 *.tmp
 *.bak
 *~

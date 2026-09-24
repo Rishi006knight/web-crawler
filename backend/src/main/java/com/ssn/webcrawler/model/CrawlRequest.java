@@ -3,13 +3,19 @@ package com.ssn.webcrawler.model;
 public class CrawlRequest {
     private String url;
     private String seedUrl;
-    private int maxPages = 20;
-    private int maxDepth = 2;
+    private Integer maxPages;
+    private Integer maxDepth;
+    private boolean ignoreRobotsTxt = false;
+    private Integer concurrency = 8;
+    private boolean sameDomainOnly = true;
+    private String includePattern;
+    private String excludePattern;
+    private boolean urlNormalization = true;
 
     public CrawlRequest() {
     }
 
-    public CrawlRequest(String url, int maxPages, int maxDepth) {
+    public CrawlRequest(String url, Integer maxPages, Integer maxDepth) {
         this.url = url;
         this.maxPages = maxPages;
         this.maxDepth = maxDepth;
@@ -34,19 +40,81 @@ public class CrawlRequest {
         this.seedUrl = seedUrl;
     }
 
-    public int getMaxPages() {
-        return maxPages > 0 ? maxPages : 20;
+    public Integer getMaxPages() {
+        return maxPages;
     }
 
-    public void setMaxPages(int maxPages) {
+    public void setMaxPages(Integer maxPages) {
         this.maxPages = maxPages;
     }
 
-    public int getMaxDepth() {
-        return maxDepth > 0 ? maxDepth : 2;
+    public Integer getMaxDepth() {
+        return maxDepth;
     }
 
-    public void setMaxDepth(int maxDepth) {
+    public void setMaxDepth(Integer maxDepth) {
         this.maxDepth = maxDepth;
+    }
+
+    public boolean isIgnoreRobotsTxt() {
+        return ignoreRobotsTxt;
+    }
+
+    public void setIgnoreRobotsTxt(boolean ignoreRobotsTxt) {
+        this.ignoreRobotsTxt = ignoreRobotsTxt;
+    }
+
+    public Integer getConcurrency() {
+        return concurrency;
+    }
+
+    public void setConcurrency(Integer concurrency) {
+        this.concurrency = concurrency;
+    }
+
+    public boolean isSameDomainOnly() {
+        return sameDomainOnly;
+    }
+
+    public void setSameDomainOnly(boolean sameDomainOnly) {
+        this.sameDomainOnly = sameDomainOnly;
+    }
+
+    public String getIncludePattern() {
+        return includePattern;
+    }
+
+    public void setIncludePattern(String includePattern) {
+        this.includePattern = includePattern;
+    }
+
+    public String getExcludePattern() {
+        return excludePattern;
+    }
+
+    public void setExcludePattern(String excludePattern) {
+        this.excludePattern = excludePattern;
+    }
+
+    public boolean isUrlNormalization() {
+        return urlNormalization;
+    }
+
+    public void setUrlNormalization(boolean urlNormalization) {
+        this.urlNormalization = urlNormalization;
+    }
+
+    public int getEffectiveMaxPages() {
+        return (maxPages != null && maxPages > 0) ? maxPages : 20;
+    }
+
+    public int getEffectiveMaxDepth() {
+        return (maxDepth != null && maxDepth > 0) ? maxDepth : 2;
+    }
+
+    public int getEffectiveConcurrency() {
+        if (concurrency == null || concurrency < 1) return 8;
+        if (concurrency > 16) return 16;
+        return concurrency;
     }
 }

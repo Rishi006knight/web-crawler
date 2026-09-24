@@ -18,6 +18,14 @@ export interface PageData {
   crawlTimestamp: number;
 }
 
+export interface CrawlAttempt {
+  url: string;
+  outcome: string;
+  httpStatus?: number;
+  reason?: string;
+  durationMillis: number;
+}
+
 export interface CrawlJob {
   jobId: string;
   startUrl: string;
@@ -26,7 +34,11 @@ export interface CrawlJob {
   maxDepth: number;
   pagesCrawled: number;
   discoveredUrlsCount: number;
+  duplicatesSkippedCount?: number;
+  concurrency?: number;
   pages: PageData[];
+  skipped?: CrawlAttempt[];
+  errorSummary?: Record<string, number>;
   startTime: number;
   endTime?: number;
   errorMessage?: string;
@@ -37,4 +49,10 @@ export interface CrawlRequest {
   url: string;
   maxPages: number;
   maxDepth: number;
+  concurrency?: number;
+  ignoreRobotsTxt?: boolean;
+  sameDomainOnly?: boolean;
+  urlNormalization?: boolean;
+  includePattern?: string;
+  excludePattern?: string;
 }

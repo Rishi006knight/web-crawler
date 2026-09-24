@@ -3,6 +3,8 @@ package com.ssn.webcrawler.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CrawlJob {
     private String jobId;
@@ -10,9 +12,14 @@ public class CrawlJob {
     private String status; // RUNNING, COMPLETED, FAILED, STOPPED
     private int maxPages;
     private int maxDepth;
+    private boolean ignoreRobotsTxt = false;
+    private int concurrency = 8;
+    private int duplicatesSkippedCount = 0;
     private int pagesCrawled;
     private int discoveredUrlsCount;
     private List<PageData> pages = Collections.synchronizedList(new ArrayList<>());
+    private List<CrawlAttempt> skipped = Collections.synchronizedList(new ArrayList<>());
+    private Map<String, Integer> errorSummary = new ConcurrentHashMap<>();
     private long startTime;
     private Long endTime;
     private String errorMessage;
@@ -71,6 +78,34 @@ public class CrawlJob {
         this.maxDepth = maxDepth;
     }
 
+    public boolean isIgnoreRobotsTxt() {
+        return ignoreRobotsTxt;
+    }
+
+    public void setIgnoreRobotsTxt(boolean ignoreRobotsTxt) {
+        this.ignoreRobotsTxt = ignoreRobotsTxt;
+    }
+
+    public int getConcurrency() {
+        return concurrency;
+    }
+
+    public void setConcurrency(int concurrency) {
+        this.concurrency = concurrency;
+    }
+
+    public int getDuplicatesSkippedCount() {
+        return duplicatesSkippedCount;
+    }
+
+    public void setDuplicatesSkippedCount(int duplicatesSkippedCount) {
+        this.duplicatesSkippedCount = duplicatesSkippedCount;
+    }
+
+    public void incrementDuplicatesSkipped() {
+        this.duplicatesSkippedCount++;
+    }
+
     public int getPagesCrawled() {
         return pages != null ? pages.size() : pagesCrawled;
     }
@@ -124,6 +159,31 @@ public class CrawlJob {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public List<CrawlAttempt> getSkipped() {
+        return skipped;
+    }
+
+    public void setSkipped(List<CrawlAttempt> skipped) {
+        this.skipped = skipped;
+    }
+
+    public Map<String, Integer> getErrorSummary() {
+        return errorSummary;
+    }
+
+    public void setErrorSummary(Map<String, Integer> errorSummary) {
+        this.errorSummary = errorSummary;
+    }
+
+    public void addSkipped(CrawlAttempt attempt) {
+        if (this.skipped != null && attempt != null) {
+            this.skipped.add(attempt);
+            if (this.errorSummary != null && attempt.getOutcome() != null) {
+                this.errorSummary.merge(attempt.getOutcome(), 1, Integer::sum);
+            }
+        }
     }
 
     public long getDurationMillis() {
