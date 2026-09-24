@@ -3,12 +3,43 @@
 # ==========================================
 
 # ------------------------------------------
+# Sensitive Files & Secrets (DO NOT COMMIT)
+# ------------------------------------------
+*.env
+*.env.*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secret Spring Boot property files
+*application-local.properties
+*application-secret.properties
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-secret.properties
+
+# Certificates, Keys & Credentials
+*.pem
+*.key
+*.pkcs12
+*.p12
+*.pfx
+credentials.json
+secrets/
+
+# ------------------------------------------
+# Old & Unnecessary Advanced Version Files
+# ------------------------------------------
+backend/src/src/
+frontend/src/components/
+
+# ------------------------------------------
 # Backend (Spring Boot & Maven)
 # ------------------------------------------
 **/target/
 target/
 backend/target/
-backend/src/src/
 *.class
 
 # Maven Release & Dependency Artifacts
@@ -60,6 +91,8 @@ test_results.log
 # ------------------------------------------
 dump.rdb
 *.rdb
+*.sqlite
+*.db
 
 # ------------------------------------------
 # IDE & Editor Files

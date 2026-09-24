@@ -1,10 +1,15 @@
 package com.ssn.webcrawler.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssn.webcrawler.entity.CrawlJobEntity;
+import com.ssn.webcrawler.entity.PageDataEntity;
 import com.ssn.webcrawler.model.ContentBlock;
 import com.ssn.webcrawler.model.CrawlJob;
 import com.ssn.webcrawler.model.CrawlRequest;
 import com.ssn.webcrawler.model.PageData;
+import com.ssn.webcrawler.repository.CrawlJobRepository;
+import com.ssn.webcrawler.repository.PageDataRepository;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -23,10 +28,17 @@ public class CrawlerService {
 
     private static final Logger log = LoggerFactory.getLogger(CrawlerService.class);
 
-    private final ConcurrentHashMap<String, CrawlJob> jobs = new ConcurrentHashMap<>();
+    private final CrawlJobRepository crawlJobRepository;
+    private final PageDataRepository pageDataRepository;
+    private final ConcurrentHashMap<String, CrawlJob> activeJobs = new ConcurrentHashMap<>();
     private final ExecutorService crawlExecutor = Executors.newFixedThreadPool(4);
     private final ObjectMapper objectMapper = new ObjectMapper();
     private volatile String latestJobId = null;
+
+    public CrawlerService(CrawlJobRepository crawlJobRepository, PageDataRepository pageDataRepository) {
+        this.crawlJobRepository = crawlJobRepository;
+        this.pageDataRepository = pageDataRepository;
+    }
 
     public CrawlJob startCrawl(CrawlRequest request) {
         String rawUrl = request.getUrl();
@@ -40,29 +52,60 @@ public class CrawlerService {
         int maxDepth = request.getMaxDepth();
 
         CrawlJob job = new CrawlJob(jobId, normalizedUrl, maxPages, maxDepth);
-        jobs.put(jobId, job);
+        activeJobs.put(jobId, job);
         latestJobId = jobId;
+
+        // Persist initial job record to Neon PostgreSQL
+        try {
+            CrawlJobEntity entity = new CrawlJobEntity(jobId, normalizedUrl, maxPages, maxDepth);
+            crawlJobRepository.save(entity);
+            log.info("Saved new crawl job to Neon PostgreSQL: {}", jobId);
+        } catch (Exception e) {
+            log.error("Failed to persist job to Neon PostgreSQL: {}", e.getMessage());
+        }
 
         crawlExecutor.submit(() -> executeCrawl(job));
         return job;
     }
 
     public CrawlJob getJob(String jobId) {
-        return jobs.get(jobId);
+        CrawlJob job = activeJobs.get(jobId);
+        if (job != null) {
+            return job;
+        }
+
+        // If not in active memory (e.g. after a restart), fetch from Neon PostgreSQL
+        return crawlJobRepository.findById(jobId)
+                .map(this::toDto)
+                .orElse(null);
     }
 
     public CrawlJob getLatestJob() {
-        if (latestJobId != null) {
-            return jobs.get(latestJobId);
+        if (latestJobId != null && activeJobs.containsKey(latestJobId)) {
+            return activeJobs.get(latestJobId);
         }
-        return null;
+
+        // Fetch most recent from Neon PostgreSQL
+        return crawlJobRepository.findFirstByOrderByStartTimeDesc()
+                .map(this::toDto)
+                .orElse(null);
     }
 
     public boolean stopJob(String jobId) {
-        CrawlJob job = jobs.get(jobId);
+        CrawlJob job = activeJobs.get(jobId);
         if (job != null && "RUNNING".equals(job.getStatus())) {
             job.setStatus("STOPPED");
             job.setEndTime(System.currentTimeMillis());
+
+            try {
+                crawlJobRepository.findById(jobId).ifPresent(entity -> {
+                    entity.setStatus("STOPPED");
+                    entity.setEndTime(job.getEndTime());
+                    crawlJobRepository.save(entity);
+                });
+            } catch (Exception e) {
+                log.warn("Failed to update stopped status in database: {}", e.getMessage());
+            }
             return true;
         }
         return false;
@@ -80,6 +123,8 @@ public class CrawlerService {
         queue.offer(new CrawlTask(startUrl, 0));
         discovered.add(startUrl);
         job.setDiscoveredUrlsCount(1);
+
+        CrawlJobEntity jobEntity = crawlJobRepository.findById(job.getJobId()).orElse(null);
 
         try {
             while ("RUNNING".equals(job.getStatus()) && !queue.isEmpty() && job.getPages().size() < job.getMaxPages()) {
@@ -221,7 +266,21 @@ public class CrawlerService {
                     );
 
                     job.addPage(pageData);
-                    log.info("[{}/{}] Crawled: {} ({} words, {} blocks)", 
+
+                    // Persist page to Neon PostgreSQL
+                    if (jobEntity != null) {
+                        try {
+                            PageDataEntity pageEntity = toEntity(pageData, jobEntity);
+                            pageDataRepository.save(pageEntity);
+                            jobEntity.setPagesCrawled(job.getPages().size());
+                            jobEntity.setDiscoveredUrlsCount(job.getDiscoveredUrlsCount());
+                            crawlJobRepository.save(jobEntity);
+                        } catch (Exception ex) {
+                            log.warn("Failed to persist page to DB: {}", ex.getMessage());
+                        }
+                    }
+
+                    log.info("[{}/{}] Crawled: {} ({} words, {} blocks)",
                             job.getPages().size(), job.getMaxPages(), currentUrl, totalWords, structuredBlocks.size());
 
                 } catch (Exception e) {
@@ -245,54 +304,91 @@ public class CrawlerService {
             job.setErrorMessage(e.getMessage());
         } finally {
             job.setEndTime(System.currentTimeMillis());
+
+            // Final status update in Neon PostgreSQL
+            if (jobEntity != null) {
+                try {
+                    jobEntity.setStatus(job.getStatus());
+                    jobEntity.setEndTime(job.getEndTime());
+                    jobEntity.setErrorMessage(job.getErrorMessage());
+                    jobEntity.setPagesCrawled(job.getPages().size());
+                    jobEntity.setDiscoveredUrlsCount(job.getDiscoveredUrlsCount());
+                    crawlJobRepository.save(jobEntity);
+                } catch (Exception ex) {
+                    log.warn("Failed to update final status in DB: {}", ex.getMessage());
+                }
+            }
+
             log.info("Finished crawl job {}. Crawled {} pages, found {} links.",
                     job.getJobId(), job.getPages().size(), job.getDiscoveredUrlsCount());
         }
     }
 
-    public String exportCsv(String jobId) {
-        CrawlJob job = jobs.get(jobId);
-        if (job == null) {
-            return "";
-        }
+    // Helper mappings between Entity and DTO
+    private PageDataEntity toEntity(PageData dto, CrawlJobEntity jobEntity) {
+        PageDataEntity entity = new PageDataEntity();
+        entity.setJob(jobEntity);
+        entity.setUrl(dto.getUrl());
+        entity.setTitle(dto.getTitle());
+        entity.setDescription(dto.getDescription());
+        entity.setStatusCode(dto.getStatusCode());
+        entity.setWordCount(dto.getWordCount());
+        entity.setTextContent(dto.getTextContent());
+        entity.setCrawlTimestamp(dto.getCrawlTimestamp());
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("URL,Title,Description,Status,WordCount,HeadingsCount,StructuredBlocksCount,LinksCount,ImagesCount,Headings,StructuredText\n");
-
-        for (PageData p : job.getPages()) {
-            sb.append(escapeCsv(p.getUrl())).append(",");
-            sb.append(escapeCsv(p.getTitle())).append(",");
-            sb.append(escapeCsv(p.getDescription())).append(",");
-            sb.append(p.getStatusCode()).append(",");
-            sb.append(p.getWordCount()).append(",");
-            sb.append(p.getHeadings().size()).append(",");
-            sb.append(p.getStructuredContent().size()).append(",");
-            sb.append(p.getLinks().size()).append(",");
-            sb.append(p.getImages().size()).append(",");
-            sb.append(escapeCsv(String.join(" | ", p.getHeadings()))).append(",");
-            sb.append(escapeCsv(p.getTextContent())).append("\n");
-        }
-
-        return sb.toString();
-    }
-
-    public String exportJson(String jobId) {
-        CrawlJob job = jobs.get(jobId);
-        if (job == null) {
-            return "{}";
-        }
         try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(job);
-        } catch (Exception e) {
-            return "{}";
+            entity.setHeadingsJson(objectMapper.writeValueAsString(dto.getHeadings()));
+            entity.setStructuredContentJson(objectMapper.writeValueAsString(dto.getStructuredContent()));
+            entity.setLinksJson(objectMapper.writeValueAsString(dto.getLinks()));
+            entity.setImagesJson(objectMapper.writeValueAsString(dto.getImages()));
+        } catch (Exception ignored) {
         }
+        return entity;
     }
 
-    private String escapeCsv(String field) {
-        if (field == null) {
-            return "\"\"";
+    private PageData toDto(PageDataEntity entity) {
+        PageData dto = new PageData();
+        dto.setUrl(entity.getUrl());
+        dto.setTitle(entity.getTitle());
+        dto.setDescription(entity.getDescription());
+        dto.setStatusCode(entity.getStatusCode());
+        dto.setWordCount(entity.getWordCount());
+        dto.setTextContent(entity.getTextContent());
+        dto.setCrawlTimestamp(entity.getCrawlTimestamp());
+
+        try {
+            if (entity.getHeadingsJson() != null) {
+                dto.setHeadings(objectMapper.readValue(entity.getHeadingsJson(), new TypeReference<List<String>>() {}));
+            }
+            if (entity.getStructuredContentJson() != null) {
+                dto.setStructuredContent(objectMapper.readValue(entity.getStructuredContentJson(), new TypeReference<List<ContentBlock>>() {}));
+            }
+            if (entity.getLinksJson() != null) {
+                dto.setLinks(objectMapper.readValue(entity.getLinksJson(), new TypeReference<List<String>>() {}));
+            }
+            if (entity.getImagesJson() != null) {
+                dto.setImages(objectMapper.readValue(entity.getImagesJson(), new TypeReference<List<String>>() {}));
+            }
+        } catch (Exception ignored) {
         }
-        return "\"" + field.replace("\"", "\"\"").replace("\n", " \n ").replace("\r", "") + "\"";
+        return dto;
+    }
+
+    private CrawlJob toDto(CrawlJobEntity entity) {
+        CrawlJob dto = new CrawlJob(entity.getJobId(), entity.getStartUrl(), entity.getMaxPages(), entity.getMaxDepth());
+        dto.setStatus(entity.getStatus());
+        dto.setPagesCrawled(entity.getPagesCrawled());
+        dto.setDiscoveredUrlsCount(entity.getDiscoveredUrlsCount());
+        dto.setStartTime(entity.getStartTime());
+        dto.setEndTime(entity.getEndTime());
+        dto.setErrorMessage(entity.getErrorMessage());
+
+        if (entity.getPages() != null) {
+            for (PageDataEntity p : entity.getPages()) {
+                dto.addPage(toDto(p));
+            }
+        }
+        return dto;
     }
 
     private String normalizeUrl(String url) {

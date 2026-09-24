@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: webcrawler-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://ep-icy-bonus-a7ny1zzn-pooler.ap-southeast-2.aws.neon.tech:5432/neondb?sslmode=require
+      - key: SPRING_DATASOURCE_USERNAME
+        value: neondb_owner
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
