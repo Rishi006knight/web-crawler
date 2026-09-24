@@ -12,7 +12,6 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
   const [url, setUrl] = useState(defaultValues?.url || '');
   const [maxPages, setMaxPages] = useState<number>(defaultValues?.maxPages || 20);
   const [maxDepth, setMaxDepth] = useState<number>(defaultValues?.maxDepth || 2);
-  const [concurrency, setConcurrency] = useState<number>(defaultValues?.concurrency || 8);
   const [ignoreRobotsTxt, setIgnoreRobotsTxt] = useState<boolean>(defaultValues?.ignoreRobotsTxt || false);
   const [sameDomainOnly, setSameDomainOnly] = useState<boolean>(true);
   const [urlNormalization, setUrlNormalization] = useState<boolean>(true);
@@ -52,7 +51,6 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
       url: url.trim(),
       maxPages,
       maxDepth,
-      concurrency,
       ignoreRobotsTxt,
       sameDomainOnly,
       urlNormalization,
@@ -143,7 +141,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
       </div>
 
       {/* Primary Options Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label htmlFor="max-pages-select" className="block text-xs font-semibold text-ink-strong mb-1.5">
             Max Pages
@@ -178,24 +176,6 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
             <option value={2}>2 (Direct links)</option>
             <option value={3}>3 (Deep crawl)</option>
             <option value={5}>5 (Maximum)</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="concurrency-select" className="block text-xs font-semibold text-ink-strong mb-1.5">
-            Concurrency
-          </label>
-          <select
-            id="concurrency-select"
-            value={concurrency}
-            onChange={(e) => setConcurrency(Number(e.target.value))}
-            disabled={isLoading}
-            className="w-full px-3 py-2.5 text-sm rounded-xl bg-surface-raised border border-line text-ink-strong focus-ring emboss cursor-pointer"
-          >
-            <option value={2}>2 workers</option>
-            <option value={4}>4 workers</option>
-            <option value={8}>8 workers</option>
-            <option value={16}>16 workers</option>
           </select>
         </div>
 

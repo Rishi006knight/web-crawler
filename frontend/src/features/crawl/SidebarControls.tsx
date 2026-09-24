@@ -30,7 +30,6 @@ export function SidebarControls({
   const [url, setUrl] = useState(currentJob?.startUrl || 'https://news.ycombinator.com');
   const [maxPages, setMaxPages] = useState<number>(currentJob?.maxPages || 20);
   const [maxDepth, setMaxDepth] = useState<number>(currentJob?.maxDepth || 2);
-  const [concurrency, setConcurrency] = useState<number>(currentJob?.concurrency || 8);
   const [crawlMode, setCrawlMode] = useState<'BFS' | 'DFS'>('BFS');
   const [ignoreRobotsTxt, setIgnoreRobotsTxt] = useState(false);
   const [sameDomainOnly, setSameDomainOnly] = useState(true);
@@ -49,7 +48,6 @@ export function SidebarControls({
       url: url.trim(),
       maxPages,
       maxDepth,
-      concurrency,
       ignoreRobotsTxt,
       sameDomainOnly,
       urlNormalization,
@@ -157,23 +155,6 @@ export function SidebarControls({
                 value={maxDepth}
                 onChange={(e) => setMaxDepth(Number(e.target.value))}
                 className="w-full accent-purple-500 h-1.5 bg-surface-sunken rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Concurrency */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-ink-secondary">Concurrency</span>
-                <span className="font-mono font-bold text-ink-strong">{concurrency} workers</span>
-              </div>
-              <input
-                type="range"
-                min="2"
-                max="16"
-                step="2"
-                value={concurrency}
-                onChange={(e) => setConcurrency(Number(e.target.value))}
-                className="w-full accent-pink-500 h-1.5 bg-surface-sunken rounded-lg cursor-pointer"
               />
             </div>
           </div>

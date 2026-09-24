@@ -287,7 +287,7 @@ function MainApp() {
                 </div>
                 <h3 className="text-sm font-bold text-ink-strong">BFS Crawling</h3>
                 <p className="text-xs text-ink-secondary leading-relaxed">
-                  Breadth-first discovery with configurable depth, high concurrency, and URL pattern filters.
+                  Breadth-first discovery with configurable depth ceilings and URL pattern filters.
                 </p>
               </div>
 
