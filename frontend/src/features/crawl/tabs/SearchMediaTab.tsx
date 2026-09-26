@@ -134,7 +134,7 @@ export function SearchMediaTab({ job, initialQuery = '', onSelectPage }: SearchM
               <span>Keyword & Content Explorer</span>
             </h3>
             <p className="text-xs text-ink-secondary">
-              Search inside crawled pages for topics like <span className="font-semibold text-ink">&ldquo;laptop&rdquo;</span>, <span className="font-semibold text-ink">&ldquo;electronics&rdquo;</span>, or specifications.
+              Search across crawled text content, headings, metadata, and media.
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export function SearchMediaTab({ job, initialQuery = '', onSelectPage }: SearchM
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search keywords, products, topics (e.g. laptop, electronics, pricing, camera)..."
+            placeholder="Search in page content, headings, or media..."
             className="w-full pl-12 pr-12 py-3.5 text-sm rounded-2xl bg-surface-raised border border-line text-ink-strong placeholder:text-ink-muted focus-ring emboss transition-all duration-200 shadow-soft focus:shadow-glow-sm"
           />
           {query && (
@@ -187,26 +187,28 @@ export function SearchMediaTab({ job, initialQuery = '', onSelectPage }: SearchM
         </div>
 
         {/* ═══ Keyword Suggestions Pills ═══ */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted flex items-center space-x-1">
-            <Tag className="w-3 h-3" />
-            <span>Suggestions:</span>
-          </span>
-          {analysis.suggestedKeywords.map((kw) => (
-            <button
-              key={kw}
-              type="button"
-              onClick={() => setQuery(kw)}
-              className={`px-3 py-1 rounded-xl text-xs font-medium transition-all duration-200 emboss ${
-                query.toLowerCase() === kw.toLowerCase()
-                  ? 'gradient-accent text-white shadow-glow-sm'
-                  : 'glass text-ink-secondary hover:text-ink-strong hover:shadow-glow-sm'
-              }`}
-            >
-              {kw}
-            </button>
-          ))}
-        </div>
+        {analysis.suggestedKeywords.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted flex items-center space-x-1">
+              <Tag className="w-3 h-3" />
+              <span>Page Keywords:</span>
+            </span>
+            {analysis.suggestedKeywords.map((kw) => (
+              <button
+                key={kw}
+                type="button"
+                onClick={() => setQuery(kw)}
+                className={`px-3 py-1 rounded-xl text-xs font-medium transition-all duration-200 emboss ${
+                  query.toLowerCase() === kw.toLowerCase()
+                    ? 'gradient-accent text-white shadow-glow-sm'
+                    : 'glass text-ink-secondary hover:text-ink-strong hover:shadow-glow-sm'
+                }`}
+              >
+                {kw}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ═══ View Mode & Filter Controls Bar ═══ */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line/60">
@@ -311,23 +313,25 @@ export function SearchMediaTab({ job, initialQuery = '', onSelectPage }: SearchM
             <Search className="w-8 h-8" />
           </div>
           <div className="space-y-1.5 max-w-md mx-auto">
-            <h4 className="text-base font-bold text-ink-strong">Search Anything Inside This Link</h4>
+            <h4 className="text-base font-bold text-ink-strong">Search Crawled Content & Media</h4>
             <p className="text-xs text-ink-secondary leading-relaxed">
-              Type any keyword (e.g. <span className="font-semibold text-ink">laptop</span>, <span className="font-semibold text-ink">electronics</span>, <span className="font-semibold text-ink">battery</span>, or brand names) to view matching text snippets, headings, metadata, and extracted product images.
+              Enter any word or phrase to surface matching snippets, headings, and related images.
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-            {analysis.suggestedKeywords.slice(0, 4).map((kw) => (
-              <button
-                key={kw}
-                type="button"
-                onClick={() => setQuery(kw)}
-                className="px-3.5 py-1.5 rounded-xl glass emboss text-xs font-semibold text-ink hover:text-ink-strong hover:shadow-glow-sm transition"
-              >
-                Search &ldquo;{kw}&rdquo; →
-              </button>
-            ))}
-          </div>
+          {analysis.suggestedKeywords.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              {analysis.suggestedKeywords.slice(0, 4).map((kw) => (
+                <button
+                  key={kw}
+                  type="button"
+                  onClick={() => setQuery(kw)}
+                  className="px-3.5 py-1.5 rounded-xl glass emboss text-xs font-semibold text-ink hover:text-ink-strong hover:shadow-glow-sm transition"
+                >
+                  Search &ldquo;{kw}&rdquo; →
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -338,7 +342,7 @@ export function SearchMediaTab({ job, initialQuery = '', onSelectPage }: SearchM
           </div>
           <h4 className="text-sm font-bold text-ink-strong">No matches found for &ldquo;{query}&rdquo;</h4>
           <p className="text-xs text-ink-secondary max-w-sm mx-auto">
-            Try checking for typos or searching a broader term like &ldquo;electronics&rdquo;, &ldquo;features&rdquo;, or select from the suggestions above.
+            Try checking for typos or searching a broader term.
           </p>
           <button
             type="button"

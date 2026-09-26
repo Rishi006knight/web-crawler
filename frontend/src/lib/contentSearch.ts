@@ -387,10 +387,8 @@ function extractFrequentKeywords(pages: PageData[]): string[] {
 
   const sorted = Array.from(wordCounts.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
+    .slice(0, 6)
     .map(([w]) => w);
 
-  const defaults = ['laptop', 'electronics', 'pricing', 'reviews', 'specifications'];
-  const merged = Array.from(new Set([...sorted, ...defaults]));
-  return merged.slice(0, 6);
+  return sorted;
 }

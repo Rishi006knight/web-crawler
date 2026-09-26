@@ -6,14 +6,7 @@ import {
   AlertTriangle,
   History,
   XCircle,
-  GitCompare,
-  Sparkles,
-  Zap,
-  Globe,
-  Sliders,
-  ChevronRight,
-  Clock,
-  ArrowUpRight
+  GitCompare
 } from 'lucide-react';
 import { PageData, CrawlRequest } from './types';
 import { BrandIcon } from './components/BrandIcon';
@@ -290,39 +283,6 @@ function MainApp() {
               onSubmit={handleStartCrawl}
               isLoading={isLoading}
             />
-
-            {/* 3 Premium Feature Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 animate-slide-up">
-              <div className="glass-panel rounded-3xl p-6 space-y-3 hover:shadow-floating hover:-translate-y-1 transition-all duration-300 border border-white/50 text-left">
-                <div className="w-10 h-10 rounded-2xl gradient-accent flex items-center justify-center shadow-glow-sm">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-ink-strong">BFS Crawling</h3>
-                <p className="text-xs text-ink-secondary leading-relaxed">
-                  Breadth-first discovery with configurable depth ceilings and URL pattern filters.
-                </p>
-              </div>
-
-              <div className="glass-panel rounded-3xl p-6 space-y-3 hover:shadow-floating hover:-translate-y-1 transition-all duration-300 border border-white/50 text-left">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-sm">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-ink-strong">SSRF Protected</h3>
-                <p className="text-xs text-ink-secondary leading-relaxed">
-                  Enterprise-grade SSRF shield blocks internal IPs, metadata endpoints, and cloud service attacks.
-                </p>
-              </div>
-
-              <div className="glass-panel rounded-3xl p-6 space-y-3 hover:shadow-floating hover:-translate-y-1 transition-all duration-300 border border-white/50 text-left">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-600 flex items-center justify-center shadow-sm">
-                  <Globe className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-sm font-bold text-ink-strong">Robots.txt Compliant</h3>
-                <p className="text-xs text-ink-secondary leading-relaxed">
-                  Respects website crawl policies by default with optional override for authorized testing.
-                </p>
-              </div>
-            </div>
 
             {/* Recent Crawls Section */}
             {history.length > 0 && (

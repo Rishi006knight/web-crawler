@@ -3,15 +3,7 @@ import {
   Play,
   StopCircle,
   Sliders,
-  ShieldCheck,
-  Globe,
-  Settings2,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Zap,
-  Info,
-  Search
+  Globe
 } from 'lucide-react';
 import { CrawlRequest, CrawlJob } from '../../types';
 
@@ -29,16 +21,9 @@ export function SidebarControls({
   isLoading
 }: SidebarControlsProps) {
   const [url, setUrl] = useState(currentJob?.startUrl || 'https://news.ycombinator.com');
-  const [searchQuery, setSearchQuery] = useState(currentJob?.searchQuery || '');
   const [maxPages, setMaxPages] = useState<number>(currentJob?.maxPages || 20);
   const [maxDepth, setMaxDepth] = useState<number>(currentJob?.maxDepth || 2);
   const [crawlMode, setCrawlMode] = useState<'BFS' | 'DFS'>('BFS');
-  const [ignoreRobotsTxt, setIgnoreRobotsTxt] = useState(false);
-  const [sameDomainOnly, setSameDomainOnly] = useState(true);
-  const [urlNormalization, setUrlNormalization] = useState(true);
-  const [includePattern, setIncludePattern] = useState('');
-  const [excludePattern, setExcludePattern] = useState('');
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const isRunning = currentJob?.status === 'RUNNING';
 
@@ -50,12 +35,9 @@ export function SidebarControls({
       url: url.trim(),
       maxPages,
       maxDepth,
-      ignoreRobotsTxt,
-      sameDomainOnly,
-      urlNormalization,
-      includePattern: includePattern.trim() || undefined,
-      excludePattern: excludePattern.trim() || undefined,
-      searchQuery: searchQuery.trim() || undefined
+      sameDomainOnly: true,
+      urlNormalization: true,
+      ignoreRobotsTxt: false
     });
   };
 
@@ -65,10 +47,10 @@ export function SidebarControls({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-line/40">
           <div className="flex items-center space-x-2">
-            <Sliders className="w-4 h-4 text-cyan-500" />
+            <Sliders className="w-4 h-4 text-gradient-start" />
             <h3 className="text-sm font-bold text-ink-strong">Crawler Controls</h3>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 font-bold">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-sunken text-ink-muted font-bold">
             {crawlMode}
           </span>
         </div>
@@ -88,24 +70,6 @@ export function SidebarControls({
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com"
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-xl glass emboss text-ink-strong placeholder:text-ink-muted focus-ring font-mono"
-              />
-            </div>
-          </div>
-
-          {/* Search Focus Keyword */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted flex items-center justify-between">
-              <span>Focus Keyword (Optional)</span>
-              <span className="text-[10px] text-ink-muted">e.g. laptop</span>
-            </label>
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-2.5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="laptop, electronics..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl glass emboss text-ink-strong placeholder:text-ink-muted focus-ring"
               />
             </div>
           </div>
@@ -144,7 +108,7 @@ export function SidebarControls({
             </div>
           </div>
 
-          {/* Quick Settings Sliders */}
+          {/* Settings Sliders */}
           <div className="space-y-3 pt-2 border-t border-line/40">
             {/* Max Pages */}
             <div className="space-y-1">
@@ -180,87 +144,6 @@ export function SidebarControls({
             </div>
           </div>
 
-          {/* Compliance & Security Check */}
-          <div className="p-3 rounded-2xl bg-surface-sunken/60 space-y-2 border border-line/40 text-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span className="font-semibold text-ink-strong">SSRF Shield</span>
-              </div>
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                Active
-              </span>
-            </div>
-
-            <label className="flex items-center justify-between cursor-pointer pt-1">
-              <span className="text-[11px] text-ink-secondary">Robots.txt Policy</span>
-              <input
-                type="checkbox"
-                checked={!ignoreRobotsTxt}
-                onChange={(e) => setIgnoreRobotsTxt(!e.target.checked)}
-                className="w-4 h-4 accent-cyan-500 rounded cursor-pointer"
-              />
-            </label>
-          </div>
-
-          {/* Advanced Options Accordion */}
-          <div className="border-t border-line/40 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-              className="w-full flex items-center justify-between text-xs text-ink-secondary hover:text-ink-strong py-1"
-            >
-              <span className="font-semibold">Advanced Filters</span>
-              {isAdvancedOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-
-            {isAdvancedOpen && (
-              <div className="pt-2.5 space-y-2.5 text-xs animate-slide-up">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-ink-secondary">Same Domain Only</span>
-                  <input
-                    type="checkbox"
-                    checked={sameDomainOnly}
-                    onChange={(e) => setSameDomainOnly(e.target.checked)}
-                    className="w-4 h-4 accent-cyan-500 rounded"
-                  />
-                </label>
-
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-ink-secondary">URL Normalization</span>
-                  <input
-                    type="checkbox"
-                    checked={urlNormalization}
-                    onChange={(e) => setUrlNormalization(e.target.checked)}
-                    className="w-4 h-4 accent-cyan-500 rounded"
-                  />
-                </label>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-ink-muted">Include Regex</span>
-                  <input
-                    type="text"
-                    value={includePattern}
-                    onChange={(e) => setIncludePattern(e.target.value)}
-                    placeholder="e.g. ^/blog/.*"
-                    className="w-full px-2.5 py-1 text-[11px] rounded-lg glass font-mono text-ink-strong"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-ink-muted">Exclude Regex</span>
-                  <input
-                    type="text"
-                    value={excludePattern}
-                    onChange={(e) => setExcludePattern(e.target.value)}
-                    placeholder="e.g. .*\\.pdf$"
-                    className="w-full px-2.5 py-1 text-[11px] rounded-lg glass font-mono text-ink-strong"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Action Button: Start or Stop */}
           <div className="pt-2">
             {isRunning ? (
@@ -270,16 +153,16 @@ export function SidebarControls({
                 className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-red-500 to-pink-600 text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-glow-sm hover:opacity-90 focus-ring transition"
               >
                 <StopCircle className="w-4 h-4" />
-                <span>Stop Live Crawl</span>
+                <span>Stop Active Crawl</span>
               </button>
             ) : (
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 rounded-2xl gradient-accent text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-glow-sm hover:opacity-95 focus-ring transition"
+                className="w-full py-2.5 rounded-2xl gradient-accent text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-glow-sm hover:brightness-105 active:scale-95 focus-ring disabled:opacity-50 transition"
               >
-                <Play className="w-4 h-4 fill-white" />
-                <span>{isLoading ? 'Starting...' : 'Start New Crawl'}</span>
+                <Play className="w-4 h-4 fill-current" />
+                <span>{isLoading ? 'Launching...' : 'Run Crawl'}</span>
               </button>
             )}
           </div>

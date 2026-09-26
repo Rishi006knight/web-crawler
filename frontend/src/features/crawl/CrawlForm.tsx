@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Settings2, ShieldCheck, ShieldAlert, Check, AlertCircle, Search, Globe, Sparkles, XCircle } from 'lucide-react';
+import { Play, Check, AlertCircle, Search, Globe } from 'lucide-react';
 import { CrawlRequest } from '../../types';
 
 interface CrawlFormProps {
@@ -10,15 +10,8 @@ interface CrawlFormProps {
 
 export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps) {
   const [url, setUrl] = useState(defaultValues?.url || '');
-  const [searchQuery, setSearchQuery] = useState(defaultValues?.searchQuery || '');
   const [maxPages, setMaxPages] = useState<number>(defaultValues?.maxPages || 20);
   const [maxDepth, setMaxDepth] = useState<number>(defaultValues?.maxDepth || 2);
-  const [ignoreRobotsTxt, setIgnoreRobotsTxt] = useState<boolean>(defaultValues?.ignoreRobotsTxt || false);
-  const [sameDomainOnly, setSameDomainOnly] = useState<boolean>(true);
-  const [urlNormalization, setUrlNormalization] = useState<boolean>(true);
-  const [includePattern, setIncludePattern] = useState<string>('');
-  const [excludePattern, setExcludePattern] = useState<string>('');
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [urlError, setUrlError] = useState<string | null>(null);
 
   // Validate URL as user types
@@ -52,12 +45,9 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
       url: url.trim(),
       maxPages,
       maxDepth,
-      ignoreRobotsTxt,
-      sameDomainOnly,
-      urlNormalization,
-      includePattern: includePattern.trim() || undefined,
-      excludePattern: excludePattern.trim() || undefined,
-      searchQuery: searchQuery.trim() || undefined
+      sameDomainOnly: true,
+      urlNormalization: true,
+      ignoreRobotsTxt: false
     });
   };
 
@@ -142,46 +132,8 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
         ))}
       </div>
 
-      {/* Search Focus / Keyword Input */}
-      <div className="space-y-1.5 p-4 rounded-2xl bg-surface-sunken/60 border border-line">
-        <div className="flex items-center justify-between">
-          <label htmlFor="search-query-input" className="text-xs font-semibold uppercase tracking-wider text-ink-muted flex items-center space-x-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-gradient-start" />
-            <span>Search Inside Link / Focus Keyword (Optional)</span>
-          </label>
-          <span className="text-[10px] text-ink-muted">e.g. laptop, electronics, pricing</span>
-        </div>
-        <div className="relative flex items-center">
-          <div className="absolute left-3.5 text-ink-muted">
-            <Search className="w-4 h-4" />
-          </div>
-          <input
-            id="search-query-input"
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search keywords or products (e.g. laptop, electronics, camera, deals)..."
-            disabled={isLoading}
-            className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm rounded-xl bg-surface-raised border border-line hover:border-line-strong text-ink-strong placeholder:text-ink-muted focus-ring emboss transition-all duration-200"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3.5 text-ink-muted hover:text-ink transition"
-              aria-label="Clear keyword"
-            >
-              <XCircle className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <p className="text-[11px] text-ink-secondary">
-          Crawler will find, extract, and surface text snippets, headings, metadata, and media/images matching this topic.
-        </p>
-      </div>
-
       {/* Primary Options Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label htmlFor="max-pages-select" className="block text-xs font-semibold text-ink-strong mb-1.5">
             Max Pages
@@ -218,97 +170,7 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
             <option value={5}>5 (Maximum)</option>
           </select>
         </div>
-
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full px-3 py-2.5 text-xs font-medium rounded-xl glass emboss text-ink hover:text-ink-strong flex items-center justify-center space-x-1.5 focus-ring transition-all duration-200 hover:shadow-glow-sm active:shadow-pressed active:scale-[0.98]"
-          >
-            <Settings2 className="w-3.5 h-3.5" />
-            <span>{showAdvanced ? 'Hide Scope' : 'Scope Controls'}</span>
-          </button>
-        </div>
       </div>
-
-      {/* Advanced Scope Controls */}
-      {showAdvanced && (
-        <div className="p-5 rounded-2xl bg-surface-sunken border border-line space-y-4 animate-slide-up">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="include-pattern" className="block text-xs font-semibold text-ink-strong mb-1.5">
-                Include URL Regex Pattern
-              </label>
-              <input
-                id="include-pattern"
-                type="text"
-                value={includePattern}
-                onChange={(e) => setIncludePattern(e.target.value)}
-                placeholder="e.g. /product/.*"
-                className="w-full px-3 py-2 text-xs rounded-xl bg-surface-raised border border-line text-ink-strong placeholder:text-ink-muted focus-ring font-mono emboss"
-              />
-            </div>
-            <div>
-              <label htmlFor="exclude-pattern" className="block text-xs font-semibold text-ink-strong mb-1.5">
-                Exclude URL Regex Pattern
-              </label>
-              <input
-                id="exclude-pattern"
-                type="text"
-                value={excludePattern}
-                onChange={(e) => setExcludePattern(e.target.value)}
-                placeholder="e.g. /logout|/admin"
-                className="w-full px-3 py-2 text-xs rounded-xl bg-surface-raised border border-line text-ink-strong placeholder:text-ink-muted focus-ring font-mono emboss"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-4 pt-1 text-xs">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={sameDomainOnly}
-                onChange={(e) => setSameDomainOnly(e.target.checked)}
-                className="rounded border-line text-brand focus:ring-brand accent-brand"
-              />
-              <span className="text-ink">Stay within domain</span>
-            </label>
-
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={urlNormalization}
-                onChange={(e) => setUrlNormalization(e.target.checked)}
-                className="rounded border-line text-brand focus:ring-brand accent-brand"
-              />
-              <span className="text-ink">URL Normalization & Dedup</span>
-            </label>
-
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ignoreRobotsTxt}
-                onChange={(e) => setIgnoreRobotsTxt(e.target.checked)}
-                className="rounded border-line text-status-warning focus:ring-status-warning accent-amber-500"
-              />
-              <span className="text-ink flex items-center space-x-1">
-                <span>Override robots.txt</span>
-                {ignoreRobotsTxt ? (
-                  <ShieldAlert className="w-3.5 h-3.5 text-status-warning" />
-                ) : (
-                  <ShieldCheck className="w-3.5 h-3.5 text-status-success" />
-                )}
-              </span>
-            </label>
-          </div>
-
-          {ignoreRobotsTxt && (
-            <p className="text-[11px] text-status-warning bg-status-warning-bg p-3 rounded-xl border border-status-warning-line">
-              Caution: Overriding robots.txt disables respectful crawl politeness. Only use this on domains you own or have explicit authorization to crawl.
-            </p>
-          )}
-        </div>
-      )}
 
       {/* CTA Launch Button */}
       <button
