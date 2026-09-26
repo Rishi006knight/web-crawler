@@ -6,7 +6,8 @@ import {
   AlertTriangle,
   History,
   XCircle,
-  GitCompare
+  GitCompare,
+  ArrowUpRight
 } from 'lucide-react';
 import { PageData, CrawlRequest } from './types';
 import { BrandIcon } from './components/BrandIcon';
