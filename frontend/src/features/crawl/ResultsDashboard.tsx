@@ -15,6 +15,7 @@ import { LinkAnalysisTab } from './tabs/LinkAnalysisTab';
 import { SiteStructureTab } from './tabs/SiteStructureTab';
 import { AnalyticsTab } from './tabs/AnalyticsTab';
 import { ExportTab } from './tabs/ExportTab';
+import { SearchMediaTab } from './tabs/SearchMediaTab';
 import { ExportMenu } from './ExportMenu';
 
 interface ResultsDashboardProps {
@@ -29,7 +30,7 @@ interface ResultsDashboardProps {
   onToggleSelectAll: () => void;
 }
 
-export type DashboardTab = 'pages' | 'links' | 'structure' | 'analytics' | 'export';
+export type DashboardTab = 'pages' | 'search' | 'links' | 'structure' | 'analytics' | 'export';
 
 export function ResultsDashboard({
   job,
@@ -42,10 +43,11 @@ export function ResultsDashboard({
   onToggleSelectPage,
   onToggleSelectAll
 }: ResultsDashboardProps) {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('pages');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(job.searchQuery ? 'search' : 'pages');
 
   const tabs: { id: DashboardTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'pages', label: 'Pages Overview', icon: <FileText className="w-4 h-4" />, badge: job.pages?.length || 0 },
+    { id: 'search', label: 'Search & Media', icon: <Search className="w-4 h-4" /> },
     { id: 'links', label: 'Link Analysis', icon: <Link2 className="w-4 h-4" /> },
     { id: 'structure', label: 'Site Structure', icon: <Layers className="w-4 h-4" /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
@@ -122,13 +124,26 @@ export function ResultsDashboard({
               )}
             </div>
 
-            <div className="text-xs text-ink-muted flex items-center space-x-2">
-              <span>Showing {filteredPages.length} of {job.pages?.length || 0} pages</span>
-              {selectedUrls.size > 0 && (
-                <span className="font-semibold gradient-accent-text">
-                  ({selectedUrls.size} selected)
-                </span>
+            <div className="flex items-center space-x-3">
+              {searchFilter && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('search')}
+                  className="px-3 py-1.5 rounded-xl gradient-accent text-white text-xs font-semibold flex items-center space-x-1.5 shadow-glow-sm hover:brightness-105 transition"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Deep Search Explorer &rarr;</span>
+                </button>
               )}
+
+              <div className="text-xs text-ink-muted flex items-center space-x-2">
+                <span>Showing {filteredPages.length} of {job.pages?.length || 0} pages</span>
+                {selectedUrls.size > 0 && (
+                  <span className="font-semibold gradient-accent-text">
+                    ({selectedUrls.size} selected)
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -173,6 +188,15 @@ export function ResultsDashboard({
             />
           )}
         </div>
+      )}
+
+      {/* ═══ Tab: Search & Media Explorer ═══ */}
+      {activeTab === 'search' && (
+        <SearchMediaTab
+          job={job}
+          initialQuery={searchFilter || job.searchQuery || ''}
+          onSelectPage={onSelectPage}
+        />
       )}
 
       {/* ═══ Tab 2: Link Analysis ═══ */}

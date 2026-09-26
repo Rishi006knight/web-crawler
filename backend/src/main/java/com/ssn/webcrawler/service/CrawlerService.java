@@ -8,6 +8,7 @@ import com.ssn.webcrawler.model.ContentBlock;
 import com.ssn.webcrawler.model.CrawlAttempt;
 import com.ssn.webcrawler.model.CrawlJob;
 import com.ssn.webcrawler.model.CrawlRequest;
+import com.ssn.webcrawler.model.ImageDetail;
 import com.ssn.webcrawler.model.PageData;
 import com.ssn.webcrawler.repository.CrawlJobRepository;
 import com.ssn.webcrawler.repository.PageDataRepository;
@@ -112,12 +113,14 @@ public class CrawlerService {
         CrawlJob job = new CrawlJob(jobId, normalizedUrl, maxPages, maxDepth);
         job.setIgnoreRobotsTxt(request.isIgnoreRobotsTxt());
         job.setConcurrency(concurrency);
+        job.setSearchQuery(request.getSearchQuery());
         activeJobs.put(jobId, job);
         latestJobId = jobId;
 
         // Persist initial job record
         try {
             CrawlJobEntity entity = new CrawlJobEntity(jobId, normalizedUrl, maxPages, maxDepth);
+            entity.setSearchQuery(request.getSearchQuery());
             crawlJobRepository.save(entity);
             log.info("Saved new crawl job to Neon PostgreSQL: {}", jobId);
         } catch (Exception e) {
@@ -174,6 +177,98 @@ public class CrawlerService {
             return job.getPages().get(pageIndex);
         }
         return null;
+    }
+
+    public Map<String, Object> searchPages(String jobId, String query) {
+        CrawlJob job = getJob(jobId);
+        if (job == null || query == null || query.trim().isEmpty()) {
+            return Map.of("query", query != null ? query : "", "totalMatches", 0, "results", List.of());
+        }
+
+        String q = query.trim().toLowerCase(Locale.ROOT);
+        List<Map<String, Object>> matchedPages = new ArrayList<>();
+        int totalMatches = 0;
+
+        for (PageData page : job.getPages()) {
+            int pageMatches = 0;
+            List<String> matchedHeadings = new ArrayList<>();
+            List<String> snippets = new ArrayList<>();
+            List<ImageDetail> matchedMedia = new ArrayList<>();
+
+            // Check title
+            if (page.getTitle() != null && page.getTitle().toLowerCase(Locale.ROOT).contains(q)) {
+                pageMatches += 3;
+            }
+
+            // Check meta description
+            if (page.getDescription() != null && page.getDescription().toLowerCase(Locale.ROOT).contains(q)) {
+                pageMatches += 2;
+            }
+
+            // Check headings
+            if (page.getHeadings() != null) {
+                for (String h : page.getHeadings()) {
+                    if (h.toLowerCase(Locale.ROOT).contains(q)) {
+                        matchedHeadings.add(h);
+                        pageMatches += 2;
+                    }
+                }
+            }
+
+            // Check text content & extract snippets
+            if (page.getTextContent() != null) {
+                String text = page.getTextContent();
+                String lowerText = text.toLowerCase(Locale.ROOT);
+                int idx = 0;
+                while ((idx = lowerText.indexOf(q, idx)) != -1) {
+                    pageMatches++;
+                    if (snippets.size() < 6) {
+                        int start = Math.max(0, idx - 60);
+                        int end = Math.min(text.length(), idx + q.length() + 60);
+                        String snippet = (start > 0 ? "..." : "") + text.substring(start, end).trim() + (end < text.length() ? "..." : "");
+                        snippets.add(snippet);
+                    }
+                    idx += q.length();
+                }
+            }
+
+            // Check image details
+            if (page.getImageDetails() != null) {
+                for (ImageDetail img : page.getImageDetails()) {
+                    boolean match = (img.getAlt() != null && img.getAlt().toLowerCase(Locale.ROOT).contains(q))
+                            || (img.getTitle() != null && img.getTitle().toLowerCase(Locale.ROOT).contains(q))
+                            || (img.getUrl() != null && img.getUrl().toLowerCase(Locale.ROOT).contains(q));
+                    if (match) {
+                        matchedMedia.add(img);
+                        pageMatches += 2;
+                    }
+                }
+            }
+
+            if (pageMatches > 0) {
+                totalMatches += pageMatches;
+                Map<String, Object> pageResult = new HashMap<>();
+                pageResult.put("url", page.getUrl());
+                pageResult.put("title", page.getTitle());
+                pageResult.put("description", page.getDescription());
+                pageResult.put("statusCode", page.getStatusCode());
+                pageResult.put("matchCount", pageMatches);
+                pageResult.put("matchedHeadings", matchedHeadings);
+                pageResult.put("snippets", snippets);
+                pageResult.put("matchedMedia", matchedMedia);
+                pageResult.put("pageImages", page.getImages());
+                matchedPages.add(pageResult);
+            }
+        }
+
+        matchedPages.sort((a, b) -> Integer.compare((Integer) b.get("matchCount"), (Integer) a.get("matchCount")));
+
+        return Map.of(
+                "query", query,
+                "totalMatches", totalMatches,
+                "matchedPagesCount", matchedPages.size(),
+                "results", matchedPages
+        );
     }
 
     public CrawlJob getLatestJob() {
@@ -531,12 +626,27 @@ public class CrawlerService {
                 }
             }
 
-            // Extract images
+            // Extract images with metadata (alt text, title, src)
             List<String> images = new ArrayList<>();
-            for (Element img : doc.select("img[src]")) {
+            List<ImageDetail> imageDetails = new ArrayList<>();
+            Set<String> seenImgUrls = new HashSet<>();
+
+            for (Element img : doc.select("img")) {
                 String absSrc = img.attr("abs:src");
-                if (absSrc != null && !absSrc.trim().isEmpty() && images.size() < 30) {
-                    images.add(absSrc.trim());
+                if (absSrc == null || absSrc.trim().isEmpty()) {
+                    absSrc = img.attr("abs:data-src");
+                }
+                if (absSrc == null || absSrc.trim().isEmpty()) {
+                    absSrc = img.attr("abs:data-original");
+                }
+                if (absSrc != null && !absSrc.trim().isEmpty() && isValidHttpUrl(absSrc)) {
+                    String cleanSrc = absSrc.trim();
+                    if (seenImgUrls.add(cleanSrc) && images.size() < 40) {
+                        String alt = img.attr("alt") != null ? img.attr("alt").trim() : "";
+                        String imgTitle = img.attr("title") != null ? img.attr("title").trim() : "";
+                        images.add(cleanSrc);
+                        imageDetails.add(new ImageDetail(cleanSrc, alt, imgTitle));
+                    }
                 }
             }
 
@@ -550,7 +660,8 @@ public class CrawlerService {
                     structuredBlocks,
                     totalWords,
                     links,
-                    images
+                    images,
+                    imageDetails
             );
 
             job.addPage(pageData);
@@ -657,6 +768,7 @@ public class CrawlerService {
             entity.setStructuredContentJson(objectMapper.writeValueAsString(dto.getStructuredContent()));
             entity.setLinksJson(objectMapper.writeValueAsString(dto.getLinks()));
             entity.setImagesJson(objectMapper.writeValueAsString(dto.getImages()));
+            entity.setImageDetailsJson(objectMapper.writeValueAsString(dto.getImageDetails()));
         } catch (Exception ignored) {
         }
         return entity;
@@ -685,6 +797,9 @@ public class CrawlerService {
             if (entity.getImagesJson() != null) {
                 dto.setImages(objectMapper.readValue(entity.getImagesJson(), new TypeReference<List<String>>() {}));
             }
+            if (entity.getImageDetailsJson() != null) {
+                dto.setImageDetails(objectMapper.readValue(entity.getImageDetailsJson(), new TypeReference<List<ImageDetail>>() {}));
+            }
         } catch (Exception ignored) {
         }
         return dto;
@@ -698,6 +813,7 @@ public class CrawlerService {
         dto.setStartTime(entity.getStartTime());
         dto.setEndTime(entity.getEndTime());
         dto.setErrorMessage(entity.getErrorMessage());
+        dto.setSearchQuery(entity.getSearchQuery());
 
         if (entity.getPages() != null) {
             for (PageDataEntity p : entity.getPages()) {

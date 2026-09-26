@@ -46,6 +46,9 @@ public class PageDataEntity {
     @Column(name = "images_json", columnDefinition = "TEXT")
     private String imagesJson;
 
+    @Column(name = "image_details_json", columnDefinition = "TEXT")
+    private String imageDetailsJson;
+
     @Column(name = "crawl_timestamp")
     private long crawlTimestamp;
 
@@ -147,6 +150,14 @@ public class PageDataEntity {
 
     public void setImagesJson(String imagesJson) {
         this.imagesJson = imagesJson;
+    }
+
+    public String getImageDetailsJson() {
+        return imageDetailsJson;
+    }
+
+    public void setImageDetailsJson(String imageDetailsJson) {
+        this.imageDetailsJson = imageDetailsJson;
     }
 
     public long getCrawlTimestamp() {

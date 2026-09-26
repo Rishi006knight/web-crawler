@@ -19,6 +19,7 @@ import { PageData } from '../../types';
 
 interface InspectorModalProps {
   page: PageData | null;
+  searchQuery?: string;
   onClose: () => void;
   onNext?: () => void;
   onPrev?: () => void;
@@ -30,6 +31,7 @@ type TabType = 'overview' | 'blocks' | 'text' | 'headings' | 'links' | 'images' 
 
 export function InspectorModal({
   page,
+  searchQuery,
   onClose,
   onNext,
   onPrev,
@@ -315,27 +317,50 @@ export function InspectorModal({
               {(!page.images || page.images.length === 0) ? (
                 <div className="col-span-full text-sm text-ink-muted py-8 text-center">No images found.</div>
               ) : (
-                page.images.map((img, index) => (
-                  <div
-                    key={index}
-                    className="rounded-2xl glass emboss overflow-hidden space-y-2 p-2.5 text-xs stagger-item animate-slide-up hover:-translate-y-0.5 hover:shadow-floating transition-all duration-200"
-                    style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
-                  >
-                    <div className="aspect-video bg-surface-sunken rounded-xl overflow-hidden flex items-center justify-center">
-                      <img
-                        src={img}
-                        alt={`Extracted ${index}`}
-                        className="object-cover w-full h-full"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
+                page.images.map((img, index) => {
+                  const detail = page.imageDetails?.[index];
+                  const altText = detail?.alt || '';
+                  const isMatch = Boolean(
+                    searchQuery && (
+                      (altText && altText.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                      img.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                  );
+
+                  return (
+                    <div
+                      key={index}
+                      className={`rounded-2xl glass emboss overflow-hidden space-y-2 p-2.5 text-xs stagger-item animate-slide-up hover:-translate-y-0.5 hover:shadow-floating transition-all duration-200 ${
+                        isMatch ? 'border-amber-500/70 ring-2 ring-amber-500/20' : ''
+                      }`}
+                      style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
+                    >
+                      <div className="relative aspect-video bg-surface-sunken rounded-xl overflow-hidden flex items-center justify-center">
+                        <img
+                          src={img}
+                          alt={altText || `Extracted ${index}`}
+                          className="object-cover w-full h-full"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        {isMatch && (
+                          <div className="absolute top-1.5 right-1.5 px-2 py-0.5 text-[9px] font-bold rounded-full bg-amber-500 text-white shadow-soft">
+                            MATCH
+                          </div>
+                        )}
+                      </div>
+                      {altText && (
+                        <p className="font-semibold text-ink-strong text-[11px] truncate px-1" title={altText}>
+                          {altText}
+                        </p>
+                      )}
+                      <div className="font-mono text-[10px] text-ink-muted truncate px-1">
+                        {img}
+                      </div>
                     </div>
-                    <div className="font-mono text-[10px] text-ink-muted truncate px-1">
-                      {img}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}

@@ -23,6 +23,7 @@ public class CrawlJob {
     private long startTime;
     private Long endTime;
     private String errorMessage;
+    private String searchQuery;
 
     public CrawlJob() {
         this.startTime = System.currentTimeMillis();
@@ -191,5 +192,13 @@ public class CrawlJob {
             return endTime - startTime;
         }
         return System.currentTimeMillis() - startTime;
+    }
+
+    public String getSearchQuery() {
+        return searchQuery;
+    }
+
+    public void setSearchQuery(String searchQuery) {
+        this.searchQuery = searchQuery;
     }
 }

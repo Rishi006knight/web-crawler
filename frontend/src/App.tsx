@@ -87,8 +87,17 @@ function MainApp() {
 
   const handleStartCrawl = (request: CrawlRequest) => {
     setSelectedUrls(new Set());
+    if (request.searchQuery) {
+      setSearchFilter(request.searchQuery);
+    }
     startCrawl(request);
-    toast(`Started crawling ${request.url}`, 'info', 'Crawl Dispatched');
+    toast(
+      request.searchQuery
+        ? `Started crawling ${request.url} focused on "${request.searchQuery}"`
+        : `Started crawling ${request.url}`,
+      'info',
+      'Crawl Dispatched'
+    );
   };
 
   // Filtered pages with safety null guards
@@ -100,7 +109,10 @@ function MainApp() {
       (p) =>
         (p.title && p.title.toLowerCase().includes(q)) ||
         (p.url && p.url.toLowerCase().includes(q)) ||
-        (p.textContent && p.textContent.toLowerCase().includes(q))
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.textContent && p.textContent.toLowerCase().includes(q)) ||
+        (p.headings && p.headings.some((h) => h.toLowerCase().includes(q))) ||
+        (p.imageDetails && p.imageDetails.some((img) => img.alt && img.alt.toLowerCase().includes(q)))
     );
   }, [job?.pages, debouncedFilter]);
 
@@ -456,6 +468,7 @@ function MainApp() {
       <ErrorBoundary fallbackTitle="Inspector Rendering Error">
         <InspectorModal
           page={selectedPage}
+          searchQuery={searchFilter || job?.searchQuery}
           onClose={() => setSelectedPage(null)}
           onNext={() => hasNext && job?.pages && setSelectedPage(job.pages[currentIndex + 1])}
           onPrev={() => hasPrev && job?.pages && setSelectedPage(job.pages[currentIndex - 1])}

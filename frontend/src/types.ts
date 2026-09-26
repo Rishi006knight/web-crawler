@@ -4,6 +4,12 @@ export interface ContentBlock {
   text: string;
 }
 
+export interface ImageDetail {
+  url: string;
+  alt?: string;
+  title?: string;
+}
+
 export interface PageData {
   url: string;
   title: string;
@@ -15,6 +21,7 @@ export interface PageData {
   wordCount: number;
   links: string[];
   images: string[];
+  imageDetails?: ImageDetail[];
   crawlTimestamp: number;
 }
 
@@ -36,6 +43,7 @@ export interface CrawlJob {
   discoveredUrlsCount: number;
   duplicatesSkippedCount?: number;
   concurrency?: number;
+  searchQuery?: string;
   pages: PageData[];
   skipped?: CrawlAttempt[];
   errorSummary?: Record<string, number>;
@@ -55,4 +63,6 @@ export interface CrawlRequest {
   urlNormalization?: boolean;
   includePattern?: string;
   excludePattern?: string;
+  searchQuery?: string;
+  focusKeyword?: string;
 }

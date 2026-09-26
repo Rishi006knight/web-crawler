@@ -39,6 +39,9 @@ public class CrawlJobEntity {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Column(name = "search_query", columnDefinition = "TEXT")
+    private String searchQuery;
+
     @OneToMany(mappedBy = "job", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<PageDataEntity> pages = new ArrayList<>();
 
@@ -148,5 +151,13 @@ public class CrawlJobEntity {
             page.setJob(this);
             this.pagesCrawled = this.pages.size();
         }
+    }
+
+    public String getSearchQuery() {
+        return searchQuery;
+    }
+
+    public void setSearchQuery(String searchQuery) {
+        this.searchQuery = searchQuery;
     }
 }

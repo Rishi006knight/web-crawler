@@ -11,6 +11,7 @@ public class CrawlRequest {
     private String includePattern;
     private String excludePattern;
     private boolean urlNormalization = true;
+    private String searchQuery;
 
     public CrawlRequest() {
     }
@@ -102,6 +103,22 @@ public class CrawlRequest {
 
     public void setUrlNormalization(boolean urlNormalization) {
         this.urlNormalization = urlNormalization;
+    }
+
+    public String getSearchQuery() {
+        return searchQuery;
+    }
+
+    public void setSearchQuery(String searchQuery) {
+        this.searchQuery = searchQuery;
+    }
+
+    public String getFocusKeyword() {
+        return searchQuery;
+    }
+
+    public void setFocusKeyword(String focusKeyword) {
+        this.searchQuery = focusKeyword;
     }
 
     public int getEffectiveMaxPages() {

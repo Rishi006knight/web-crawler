@@ -106,6 +106,11 @@ public class CrawlerController {
         return ResponseEntity.ok(page);
     }
 
+    @GetMapping("/crawl/{jobId}/search")
+    public ResponseEntity<?> searchJobPages(@PathVariable String jobId, @RequestParam(name = "q", defaultValue = "") String query) {
+        return ResponseEntity.ok(crawlerService.searchPages(jobId, query));
+    }
+
     @GetMapping("/crawl/latest")
     public ResponseEntity<?> getLatestJob() {
         CrawlJob job = crawlerService.getLatestJob();

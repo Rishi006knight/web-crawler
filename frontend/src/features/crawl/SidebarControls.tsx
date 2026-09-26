@@ -10,7 +10,8 @@ import {
   ChevronUp,
   Sparkles,
   Zap,
-  Info
+  Info,
+  Search
 } from 'lucide-react';
 import { CrawlRequest, CrawlJob } from '../../types';
 
@@ -28,6 +29,7 @@ export function SidebarControls({
   isLoading
 }: SidebarControlsProps) {
   const [url, setUrl] = useState(currentJob?.startUrl || 'https://news.ycombinator.com');
+  const [searchQuery, setSearchQuery] = useState(currentJob?.searchQuery || '');
   const [maxPages, setMaxPages] = useState<number>(currentJob?.maxPages || 20);
   const [maxDepth, setMaxDepth] = useState<number>(currentJob?.maxDepth || 2);
   const [crawlMode, setCrawlMode] = useState<'BFS' | 'DFS'>('BFS');
@@ -52,7 +54,8 @@ export function SidebarControls({
       sameDomainOnly,
       urlNormalization,
       includePattern: includePattern.trim() || undefined,
-      excludePattern: excludePattern.trim() || undefined
+      excludePattern: excludePattern.trim() || undefined,
+      searchQuery: searchQuery.trim() || undefined
     });
   };
 
@@ -85,6 +88,24 @@ export function SidebarControls({
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com"
                 className="w-full pl-9 pr-3 py-2 text-xs rounded-xl glass emboss text-ink-strong placeholder:text-ink-muted focus-ring font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Search Focus Keyword */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted flex items-center justify-between">
+              <span>Focus Keyword (Optional)</span>
+              <span className="text-[10px] text-ink-muted">e.g. laptop</span>
+            </label>
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="laptop, electronics..."
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl glass emboss text-ink-strong placeholder:text-ink-muted focus-ring"
               />
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Settings2, ShieldCheck, ShieldAlert, Check, AlertCircle, Search, Globe } from 'lucide-react';
+import { Play, Settings2, ShieldCheck, ShieldAlert, Check, AlertCircle, Search, Globe, Sparkles, XCircle } from 'lucide-react';
 import { CrawlRequest } from '../../types';
 
 interface CrawlFormProps {
@@ -10,6 +10,7 @@ interface CrawlFormProps {
 
 export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps) {
   const [url, setUrl] = useState(defaultValues?.url || '');
+  const [searchQuery, setSearchQuery] = useState(defaultValues?.searchQuery || '');
   const [maxPages, setMaxPages] = useState<number>(defaultValues?.maxPages || 20);
   const [maxDepth, setMaxDepth] = useState<number>(defaultValues?.maxDepth || 2);
   const [ignoreRobotsTxt, setIgnoreRobotsTxt] = useState<boolean>(defaultValues?.ignoreRobotsTxt || false);
@@ -55,7 +56,8 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
       sameDomainOnly,
       urlNormalization,
       includePattern: includePattern.trim() || undefined,
-      excludePattern: excludePattern.trim() || undefined
+      excludePattern: excludePattern.trim() || undefined,
+      searchQuery: searchQuery.trim() || undefined
     });
   };
 
@@ -138,6 +140,44 @@ export function CrawlForm({ onSubmit, isLoading, defaultValues }: CrawlFormProps
             {preset.label}
           </button>
         ))}
+      </div>
+
+      {/* Search Focus / Keyword Input */}
+      <div className="space-y-1.5 p-4 rounded-2xl bg-surface-sunken/60 border border-line">
+        <div className="flex items-center justify-between">
+          <label htmlFor="search-query-input" className="text-xs font-semibold uppercase tracking-wider text-ink-muted flex items-center space-x-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-gradient-start" />
+            <span>Search Inside Link / Focus Keyword (Optional)</span>
+          </label>
+          <span className="text-[10px] text-ink-muted">e.g. laptop, electronics, pricing</span>
+        </div>
+        <div className="relative flex items-center">
+          <div className="absolute left-3.5 text-ink-muted">
+            <Search className="w-4 h-4" />
+          </div>
+          <input
+            id="search-query-input"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search keywords or products (e.g. laptop, electronics, camera, deals)..."
+            disabled={isLoading}
+            className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm rounded-xl bg-surface-raised border border-line hover:border-line-strong text-ink-strong placeholder:text-ink-muted focus-ring emboss transition-all duration-200"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3.5 text-ink-muted hover:text-ink transition"
+              aria-label="Clear keyword"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] text-ink-secondary">
+          Crawler will find, extract, and surface text snippets, headings, metadata, and media/images matching this topic.
+        </p>
       </div>
 
       {/* Primary Options Row */}

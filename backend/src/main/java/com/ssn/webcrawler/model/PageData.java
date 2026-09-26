@@ -14,6 +14,7 @@ public class PageData {
     private int wordCount;
     private List<String> links = new ArrayList<>();
     private List<String> images = new ArrayList<>();
+    private List<ImageDetail> imageDetails = new ArrayList<>();
     private long crawlTimestamp;
 
     public PageData() {
@@ -23,6 +24,12 @@ public class PageData {
     public PageData(String url, String title, String description, int statusCode, List<String> headings, 
                     String textContent, List<ContentBlock> structuredContent, int wordCount, 
                     List<String> links, List<String> images) {
+        this(url, title, description, statusCode, headings, textContent, structuredContent, wordCount, links, images, new ArrayList<>());
+    }
+
+    public PageData(String url, String title, String description, int statusCode, List<String> headings, 
+                    String textContent, List<ContentBlock> structuredContent, int wordCount, 
+                    List<String> links, List<String> images, List<ImageDetail> imageDetails) {
         this.url = url;
         this.title = title;
         this.description = description;
@@ -33,6 +40,7 @@ public class PageData {
         this.wordCount = wordCount;
         this.links = links != null ? links : new ArrayList<>();
         this.images = images != null ? images : new ArrayList<>();
+        this.imageDetails = imageDetails != null ? imageDetails : new ArrayList<>();
         this.crawlTimestamp = System.currentTimeMillis();
     }
 
@@ -114,6 +122,14 @@ public class PageData {
 
     public void setImages(List<String> images) {
         this.images = images;
+    }
+
+    public List<ImageDetail> getImageDetails() {
+        return imageDetails;
+    }
+
+    public void setImageDetails(List<ImageDetail> imageDetails) {
+        this.imageDetails = imageDetails;
     }
 
     public long getCrawlTimestamp() {
